@@ -77,6 +77,7 @@
       this.n = parseInt(this.getAttribute('count') || '280', 10);
       this.mRad = parseFloat(this.getAttribute('mouse-radius') || this.getAttribute('mouseradius') || '0.07');
       this.mForce = parseFloat(this.getAttribute('mouse-force') || this.getAttribute('mouseforce') || '0.045');
+      this.wiggle = parseFloat(this.getAttribute('wiggle') || '1');
       this.total = F.length;
 
       this.style.display = 'block'; this.style.position = 'relative';
@@ -115,13 +116,14 @@
       this._loop = this._loop.bind(this); this.last = performance.now();
       this.raf = requestAnimationFrame(this._loop);
     }
-    static get observedAttributes() { return ['speed', 'hold', 'mouse-radius', 'mouse-force', 'mouseradius', 'mouseforce', 'mono']; }
+    static get observedAttributes() { return ['speed', 'hold', 'mouse-radius', 'mouse-force', 'mouseradius', 'mouseforce', 'wiggle', 'mono']; }
     attributeChangedCallback(name, _old, v) {
       if (!this._built) return;
       if (name === 'speed') this.speed = parseFloat(v) || 1;
       else if (name === 'hold') this.holdMs = parseFloat(v) || 3400;
       else if (name === 'mouse-radius' || name === 'mouseradius') this.mRad = parseFloat(v) || 0;
       else if (name === 'mouse-force' || name === 'mouseforce') this.mForce = parseFloat(v) || 0;
+      else if (name === 'wiggle') this.wiggle = Number.isFinite(parseFloat(v)) ? parseFloat(v) : 1;
       else if (name === 'mono') this.mono = v !== null && v !== 'false' && v !== '0';
     }
     disconnectedCallback() { cancelAnimationFrame(this.raf); this._ro && this._ro.disconnect(); this._io && this._io.disconnect(); }
@@ -273,12 +275,12 @@
     }
     _step(f, now) {
       const k = 0.055 * this.speed, damp = 0.86, mo = this.mouse, e = smooth(this.blend);
-      const t = now / 1000, calm = 1 - e * 0.75;
+      const t = now / 1000, calm = (1 - e * 0.6) * (this.wiggle == null ? 1 : this.wiggle);
       for (const q of this.p) {
-        const drift = 0.011 * calm;
-        const dx0 = Math.sin(t * 0.55 + q.ph) * drift + Math.sin(t * 0.19 + q.ph * 2.3) * drift * 0.7;
-        const dy0 = Math.cos(t * 0.47 + q.ph * 1.7) * drift + Math.cos(t * 0.23 + q.ph) * drift * 0.7;
-        const swirl = Math.sin(t * 0.13 + q.ph * 0.4) * 0.006 * calm;
+        const drift = 0.019 * calm;
+        const dx0 = Math.sin(t * 0.72 + q.ph) * drift + Math.sin(t * 1.63 + q.ph * 2.3) * drift * 0.55 + Math.sin(t * 0.24 + q.ph * 3.7) * drift * 0.8;
+        const dy0 = Math.cos(t * 0.61 + q.ph * 1.7) * drift + Math.cos(t * 1.41 + q.ph) * drift * 0.55 + Math.cos(t * 0.29 + q.ph * 2.9) * drift * 0.8;
+        const swirl = Math.sin(t * 0.17 + q.ph * 0.4) * 0.011 * calm;
         const tx = q.ax + (q.bx - q.ax) * e + dx0 + swirl;
         const ty = q.ay + (q.by - q.ay) * e + dy0 - swirl * 0.6;
         q.vx += (tx - q.x) * k * f; q.vy += (ty - q.y) * k * f;
