@@ -679,20 +679,38 @@ const pubs = [
   @media (max-width: 860px) {
     .shell {
       height: auto;
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
     }
 
+    /* Flatten .col so its sections become direct flex items of .shell —
+       lets the stage slot in right after the hero via `order`, instead of
+       always trailing at the very end of the page behind the footer. */
     .col {
-      overflow: visible;
-      padding: 0 20px;
+      display: contents;
     }
+
+    .site-header,
+    .hero,
+    .section {
+      padding-inline: 20px;
+    }
+
+    .site-header { order: 0; }
+    .hero { order: 1; }
 
     .stage-aside {
+      order: 2;
       height: 60vh;
       border-left: none;
       border-top: 1px solid var(--border);
-      order: 2;
+      border-bottom: 1px solid var(--border);
     }
+
+    #work { order: 3; }
+    #track { order: 4; }
+    #publications { order: 5; }
+    #contact { order: 6; }
 
     .site-header {
       flex-wrap: wrap;
