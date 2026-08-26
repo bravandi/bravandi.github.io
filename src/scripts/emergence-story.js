@@ -103,7 +103,7 @@
 
     _overlay() {
       const dark = this.dark, mut = dark ? '#9A95B4' : '#767190', strong = dark ? '#F4F2FB' : '#2D2A45';
-      const face = "'Archivo', system-ui, sans-serif";
+      const face = "'IRANSansX', 'Segoe UI', Tahoma, system-ui, sans-serif";
       const top = document.createElement('div');
       Object.assign(top.style, {
         position: 'absolute', top: '0', left: '0', right: '0', display: 'flex',
@@ -255,7 +255,13 @@
       const ctx = this.ctx, w = this.w, h = this.h, padX = 26;
       const padTop = 40, padBot = (this.capBar ? this.capBar.getBoundingClientRect().height : 20) + 14;
       ctx.clearRect(0, 0, w, h);
-      const X = q => padX + q.x * (w - padX * 2), Y = q => padTop + q.y * Math.max(40, h - padTop - padBot);
+      // Idle wiggle: a small pixel-space jitter, independent of the spring
+      // that settles particles onto their formation target, so the stage
+      // stays visibly alive through the multi-second hold between formations
+      // instead of freezing solid once particles arrive.
+      const jt = now / 1000;
+      const jx = q => Math.sin(jt * 1.6 + q.ph) * 9, jy = q => Math.cos(jt * 1.2 + q.ph * 1.4) * 9;
+      const X = q => padX + q.x * (w - padX * 2) + jx(q), Y = q => padTop + q.y * Math.max(40, h - padTop - padBot) + jy(q);
       const cell = 46, grid = new Map();
       for (const q of this.p) {
         const key = ((X(q) / cell) | 0) + ':' + ((Y(q) / cell) | 0);

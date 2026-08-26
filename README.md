@@ -24,7 +24,8 @@ Node 22+.
 
 ```
 public/
-  fonts/           Archivo woff2 subsets, self-hosted (no third-party requests)
+  fonts/           IRANSansX woff2 weights, self-hosted, matching the design
+                   canvas exactly (no third-party requests)
   images/          cyrus-headshot.jpg
   CNAME            Pins the custom domain on every deploy
   robots.txt       Points at the sitemap
@@ -38,10 +39,9 @@ src/
     emergence-story.js  The right-column particle simulation, a self-contained
                          vanilla custom element (<story-stage>)
   styles/
-    global.css     Design tokens (LUFAI design system: colors, spacing, the
-                    Button component) ported from the design canvas, with
-                    Archivo substituted for the canvas's default IRANSansX
-                    (a Persian typeface — not needed for all-English copy)
+    global.css     Design tokens (LUFAI design system: colors, spacing,
+                    typography, the Button component) ported verbatim from
+                    the design canvas
 ```
 
 ## Editing
