@@ -100,6 +100,7 @@
   --gradient-brand: linear-gradient(135deg, #6D28D9 0%, #9333EA 42%, #BE185D 72%, #EA6307 100%);
   --gradient-cta:   linear-gradient(90deg,  #5B21B6 0%, #7C3AED 42%, #A21C5A 70%, #C2510F 100%);
   --gradient-soft:  linear-gradient(135deg, #F4F0FF 0%, #FCF0F8 100%);
+  --gradient-text:  linear-gradient(90deg,  #7C3AED 0%, #BE185D 55%, #EA6307 100%);
 
   /* Semantic aliases */
   --surface:       var(--white);

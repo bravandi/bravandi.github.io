@@ -59,12 +59,24 @@
 
   class StoryStage extends HTMLElement {
     connectedCallback() {
-      if (this._built) return; this._built = true;
+      if (this._built) {
+        this._fit();
+        this.visible = true;
+        this.last = performance.now();
+        cancelAnimationFrame(this.raf);
+        this.raf = requestAnimationFrame(this._loop);
+        if (this._ro) this._ro.observe(this);
+        if (this._io) this._io.observe(this);
+        return;
+      }
+      this._built = true;
       this.dark = this.getAttribute('theme') === 'dark';
-      this.mono = this.hasAttribute('mono');
+      this.mono = (function (v) { return v !== null && v !== 'false' && v !== '0'; })(this.getAttribute('mono'));
       this.speed = parseFloat(this.getAttribute('speed') || '1');
       this.holdMs = parseFloat(this.getAttribute('hold') || '3400');
       this.n = parseInt(this.getAttribute('count') || '280', 10);
+      this.mRad = parseFloat(this.getAttribute('mouse-radius') || this.getAttribute('mouseradius') || '0.07');
+      this.mForce = parseFloat(this.getAttribute('mouse-force') || this.getAttribute('mouseforce') || '0.045');
       this.total = F.length;
 
       this.style.display = 'block'; this.style.position = 'relative';
@@ -94,16 +106,29 @@
 
       this._fit(); this._ro = new ResizeObserver(() => this._fit()); this._ro.observe(this);
       this.visible = true;
-      this._io = new IntersectionObserver(([e]) => { this.visible = !!(e && e.isIntersecting); }, { threshold: 0 });
+      this._io = new IntersectionObserver(([e]) => {
+        const vis = !!(e && e.isIntersecting);
+        if (vis && !this.visible) this._fit();
+        this.visible = vis;
+      }, { threshold: 0 });
       this._io.observe(this);
       this._loop = this._loop.bind(this); this.last = performance.now();
       this.raf = requestAnimationFrame(this._loop);
+    }
+    static get observedAttributes() { return ['speed', 'hold', 'mouse-radius', 'mouse-force', 'mouseradius', 'mouseforce', 'mono']; }
+    attributeChangedCallback(name, _old, v) {
+      if (!this._built) return;
+      if (name === 'speed') this.speed = parseFloat(v) || 1;
+      else if (name === 'hold') this.holdMs = parseFloat(v) || 3400;
+      else if (name === 'mouse-radius' || name === 'mouseradius') this.mRad = parseFloat(v) || 0;
+      else if (name === 'mouse-force' || name === 'mouseforce') this.mForce = parseFloat(v) || 0;
+      else if (name === 'mono') this.mono = v !== null && v !== 'false' && v !== '0';
     }
     disconnectedCallback() { cancelAnimationFrame(this.raf); this._ro && this._ro.disconnect(); this._io && this._io.disconnect(); }
 
     _overlay() {
       const dark = this.dark, mut = dark ? '#9A95B4' : '#767190', strong = dark ? '#F4F2FB' : '#2D2A45';
-      const face = "'IRANSansX', 'Segoe UI', Tahoma, system-ui, sans-serif";
+      const face = "'IRANSansX', system-ui, sans-serif";
       const top = document.createElement('div');
       Object.assign(top.style, {
         position: 'absolute', top: '0', left: '0', right: '0', display: 'flex',
@@ -162,6 +187,7 @@
         lock.style.color = this.locked ? (dark ? '#fff' : '#6D28D9') : (dark ? '#D6D1EC' : '#433F5C');
       }, '54px');
       right.append(this.count, mk('←', () => this._go(this.stage - 1)), mk('→', () => this._go(this.stage + 1)), lock);
+      const cursor = null;
       row.append(this.pager, right);
       bar.append(this.cap, row);
       this.append(top, bar);
@@ -206,7 +232,7 @@
     _go(i) {
       this.stage = ((i % this.total) + this.total) % this.total;
       this.next = (this.stage + 1) % this.total;
-      this.blend = 0; this.phase = 'move'; this.t0 = performance.now();
+      this.blend = 0; this.phase = 'hold'; this.t0 = performance.now();
       this._retarget();
     }
     _retarget(init) {
@@ -228,7 +254,10 @@
     _loop(now) {
       this.raf = requestAnimationFrame(this._loop);
       const dt = Math.min(50, now - this.last); this.last = now;
-      if (!this.visible || document.hidden) return;
+      const box = this.getBoundingClientRect();
+      if (box.width > 1 && (Math.abs(box.width - this.w) > 1 || Math.abs(box.height - this.h) > 1)) this._fit();
+      if (box.width < 2 || box.height < 2) return;
+      if (document.hidden || this.visible === false) return;
       const el = now - this.t0;
       if (this.phase === 'move') {
         this.blend = Math.min(1, el / (TRANS / this.speed));
@@ -236,17 +265,30 @@
       } else if (!this.locked && el > this.holdMs / this.speed) {
         this.phase = 'move'; this.t0 = now; this.blend = 0;
       }
-      const frac = this.phase === 'move' ? this.blend : Math.min(1, el / (this.holdMs / this.speed));
-      this._step(dt / 16.67); this._draw(now); this._paint(this.stage, frac);
+      const holdD = this.holdMs / this.speed, moveD = TRANS / this.speed, span = holdD + moveD;
+      const frac = this.phase === 'move'
+        ? (holdD + Math.min(moveD, el)) / span
+        : Math.min(holdD, el) / span;
+      this._step(dt / 16.67, now); this._draw(now); this._paint(this.stage, frac);
     }
-    _step(f) {
+    _step(f, now) {
       const k = 0.055 * this.speed, damp = 0.86, mo = this.mouse, e = smooth(this.blend);
+      const t = now / 1000, calm = 1 - e * 0.75;
       for (const q of this.p) {
-        const tx = q.ax + (q.bx - q.ax) * e, ty = q.ay + (q.by - q.ay) * e;
+        const drift = 0.011 * calm;
+        const dx0 = Math.sin(t * 0.55 + q.ph) * drift + Math.sin(t * 0.19 + q.ph * 2.3) * drift * 0.7;
+        const dy0 = Math.cos(t * 0.47 + q.ph * 1.7) * drift + Math.cos(t * 0.23 + q.ph) * drift * 0.7;
+        const swirl = Math.sin(t * 0.13 + q.ph * 0.4) * 0.006 * calm;
+        const tx = q.ax + (q.bx - q.ax) * e + dx0 + swirl;
+        const ty = q.ay + (q.by - q.ay) * e + dy0 - swirl * 0.6;
         q.vx += (tx - q.x) * k * f; q.vy += (ty - q.y) * k * f;
         if (mo.on) {
           const dx = q.x - mo.x, dy = (q.y - mo.y) * (this.h / this.w), d2 = dx * dx + dy * dy;
-          if (d2 < 0.02 && d2 > 1e-6) { const g = (0.02 - d2) * 1.6 / Math.sqrt(d2); q.vx += dx * g * f; q.vy += dy * g * f; }
+          const r = this.mRad;
+          if (d2 < r * r && d2 > 1e-8) {
+            const d = Math.sqrt(d2), s = (1 - d / r) * this.mForce;
+            q.vx += (dx / d) * s * f; q.vy += (dy / d) * s * f;
+          }
         }
         q.vx *= damp; q.vy *= damp; q.x += q.vx * f; q.y += q.vy * f;
       }
@@ -255,13 +297,7 @@
       const ctx = this.ctx, w = this.w, h = this.h, padX = 26;
       const padTop = 40, padBot = (this.capBar ? this.capBar.getBoundingClientRect().height : 20) + 14;
       ctx.clearRect(0, 0, w, h);
-      // Idle wiggle: a small pixel-space jitter, independent of the spring
-      // that settles particles onto their formation target, so the stage
-      // stays visibly alive through the multi-second hold between formations
-      // instead of freezing solid once particles arrive.
-      const jt = now / 1000;
-      const jx = q => Math.sin(jt * 1.6 + q.ph) * 9, jy = q => Math.cos(jt * 1.2 + q.ph * 1.4) * 9;
-      const X = q => padX + q.x * (w - padX * 2) + jx(q), Y = q => padTop + q.y * Math.max(40, h - padTop - padBot) + jy(q);
+      const X = q => padX + q.x * (w - padX * 2), Y = q => padTop + q.y * Math.max(40, h - padTop - padBot);
       const cell = 46, grid = new Map();
       for (const q of this.p) {
         const key = ((X(q) / cell) | 0) + ':' + ((Y(q) / cell) | 0);

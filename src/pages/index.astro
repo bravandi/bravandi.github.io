@@ -77,21 +77,25 @@ const pubs = [
             Boston, MA · Advising &amp; speaking
           </div>
         </div>
-        <h1>I turn scientific ambition<br />into AI that earns its place.</h1>
+        <h1>I turn scientific ambition into <span class="grad-text">AI that earns its place</span>.</h1>
         <p class="lede">
           Data &amp; AI product strategy leader in biopharma research and translational science. Twelve years of
           computational work, five of them building AI capability inside R&amp;D — where the measure of a model is
           not adoption, but a better decision made sooner.
         </p>
-        <p class="quote">&ldquo;Discover with Purpose.&rdquo;</p>
+        <p class="quote"><span class="quote-bar" aria-hidden="true"></span>Discover with Purpose.</p>
 
-        <div class="cta-row">
+        <div class="cta">
           <a class="lf-btn lf-btn--primary lf-btn--lg" href="https://www.linkedin.com/in/CyrusRavandi" target="_blank" rel="noopener">
             Follow on LinkedIn
           </a>
           <a class="lf-btn lf-btn--secondary lf-btn--lg" href="mailto:cyrus@ravandi.ai"> cyrus@ravandi.ai </a>
         </div>
       </section>
+
+      <aside class="stage-panel">
+        <story-stage controls theme="light" count="280" hold="3400"></story-stage>
+      </aside>
 
       <section id="work" class="section">
         <div class="section-head">
@@ -100,7 +104,7 @@ const pubs = [
         </div>
         <div class="work-grid">
           {work.map((w) => (
-            <article class="work-card">
+            <article class="work-card" data-rise="0">
               <div class="work-card__top">
                 <span class="kicker">{w.kicker}</span>
                 <span class="years">{w.years}</span>
@@ -122,7 +126,7 @@ const pubs = [
           <span class="step-num">02</span>
           <h2>Track record</h2>
         </div>
-        <div class="stats-grid">
+        <div class="stats-grid" data-rise="0">
           {stats.map((s) => (
             <div class="stat">
               <div class="stat__n">{s.n}</div>
@@ -150,7 +154,7 @@ const pubs = [
         </p>
         <ol class="pubs-list">
           {pubs.map((p) => (
-            <li class="pub">
+            <li class="pub" data-rise="0">
               <span class="pub__year">{p.year}</span>
               <div>
                 <p class="pub__cite">
@@ -172,7 +176,7 @@ const pubs = [
       </section>
 
       <section id="contact" class="section section--last">
-        <div class="contact-card">
+        <div class="contact-card" data-rise="0">
           <h2>If you are deciding where AI belongs in your research organization, I am glad to think it through with you.</h2>
           <p>Advisory, board conversations, and talks. Boston-based, working globally.</p>
           <div class="cta-row">
@@ -192,42 +196,36 @@ const pubs = [
         </div>
       </section>
     </div>
-
-    <aside class="stage-aside" id="stage-aside">
-      <story-stage controls theme="light" count="280" hold="3400"></story-stage>
-    </aside>
   </div>
 </Base>
 
 <script src="../scripts/emergence-story.js"></script>
 <script>
-  const col = document.querySelector('.col');
-  const aside = document.getElementById('stage-aside');
-  if (col && aside) {
-    aside.addEventListener(
-      'wheel',
-      (e) => {
-        if (!e.deltaY) return;
-        e.preventDefault();
-        col.scrollTop += e.deltaY;
+  // Reveal-on-scroll for [data-rise] elements, ported from the design canvas.
+  // The canvas also watches for DOM mutations (its runtime injects list items
+  // client-side); this build renders everything statically at build time, so
+  // a single sweep on load is enough — no MutationObserver needed.
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('reveal-on');
+    const rio = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('in');
+          rio.unobserve(e.target);
+        });
       },
-      { passive: false },
+      { rootMargin: '0px 0px -6% 0px', threshold: 0.05 },
     );
+    document.querySelectorAll('[data-rise]').forEach((el) => {
+      if (el.getBoundingClientRect().top < window.innerHeight * 0.94) el.classList.add('in');
+      else rio.observe(el);
+    });
   }
 </script>
 
 <style>
-  .shell {
-    height: 100vh;
-    display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    background: var(--white);
-    color: var(--text-body);
-  }
-
   .col {
-    overflow-y: auto;
-    overflow-x: hidden;
     padding: 0 clamp(28px, 5vw, 76px);
   }
 
@@ -239,7 +237,9 @@ const pubs = [
     padding: 26px 0 0;
     position: sticky;
     top: 0;
-    background: linear-gradient(var(--white) 72%, rgba(255, 255, 255, 0));
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     z-index: 5;
   }
 
@@ -251,10 +251,11 @@ const pubs = [
   }
 
   .brand-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
+    width: 11px;
+    height: 11px;
+    border-radius: 4px;
     background: var(--gradient-brand);
+    box-shadow: 0 4px 12px rgba(201, 44, 106, 0.28);
   }
 
   .brand-name {
@@ -339,6 +340,13 @@ const pubs = [
     text-wrap: balance;
   }
 
+  .grad-text {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   .lede {
     margin: 24px 0 0;
     font-size: clamp(16px, 1.25vw, 19px);
@@ -349,19 +357,49 @@ const pubs = [
   }
 
   .quote {
-    margin: 18px 0 0;
-    font-size: 17px;
+    margin: 20px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16.5px;
     font-weight: var(--fw-demibold);
     color: var(--violet-700);
     font-style: italic;
   }
 
+  .quote-bar {
+    width: 26px;
+    height: 1px;
+    background: var(--gradient-text);
+    flex: none;
+  }
+
+  .cta,
   .cta-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
     margin: 32px 0 0;
+  }
+
+  .cta {
+    gap: 10px;
+  }
+
+  .cta-row {
+    gap: 12px;
+  }
+
+  /* The canvas's mobile fix for the hero buttons: shrink and force nowrap so
+     "Follow on LinkedIn" and the email button fit side by side rather than
+     wrapping to their own lines with an awkward gap between them. */
+  @media (max-width: 600px) {
+    .cta .lf-btn {
+      height: 44px !important;
+      padding: 0 16px !important;
+      font-size: 14px !important;
+      white-space: nowrap;
+    }
   }
 
   .section {
@@ -405,17 +443,17 @@ const pubs = [
   }
 
   .work-card {
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
+    border: 1px solid var(--ink-150);
+    border-radius: 20px;
+    padding: 26px;
     background: var(--white);
     box-shadow: 0 1px 2px rgba(20, 16, 31, 0.03);
-    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms;
+    transition: transform 260ms var(--ease-out), box-shadow 260ms var(--ease-out), border-color 260ms;
   }
 
   .work-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 34px rgba(109, 40, 217, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 44px rgba(109, 40, 217, 0.11);
     border-color: var(--violet-200);
   }
 
@@ -477,21 +515,26 @@ const pubs = [
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 16px;
+    background: var(--ink-150);
+    border: 1px solid var(--ink-150);
+    border-radius: 20px;
     overflow: hidden;
   }
 
   .stat {
     background: var(--white);
-    padding: 22px 20px;
+    padding: 24px 20px;
+    transition: background 220ms ease;
+  }
+
+  .stat:hover {
+    background: var(--violet-50);
   }
 
   .stat__n {
-    font-size: 30px;
+    font-size: 32px;
     font-weight: var(--fw-extrabold);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.035em;
     color: var(--ink-950);
     font-variant-numeric: tabular-nums;
   }
@@ -543,9 +586,16 @@ const pubs = [
     display: grid;
     grid-template-columns: 58px minmax(0, 1fr);
     gap: 20px;
-    padding: 22px 6px;
-    border-bottom: 1px solid var(--border);
+    padding: 22px 6px 22px 10px;
+    border-bottom: 1px solid var(--ink-150);
     align-items: start;
+    border-radius: 12px;
+    transition: background 200ms ease, padding-left 220ms var(--ease-out);
+  }
+
+  .pub:hover {
+    background: linear-gradient(90deg, var(--violet-50), rgba(255, 255, 255, 0));
+    padding-left: 16px;
   }
 
   .pub__year {
@@ -609,10 +659,20 @@ const pubs = [
   }
 
   .contact-card {
-    border-radius: 20px;
-    padding: 34px;
+    position: relative;
+    border-radius: 26px;
+    padding: 38px;
     background: var(--gradient-soft);
     border: 1px solid var(--violet-100);
+    overflow: hidden;
+  }
+
+  .contact-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: var(--gradient-brand);
   }
 
   .contact-card h2 {
@@ -652,14 +712,51 @@ const pubs = [
     color: var(--ink-500);
   }
 
-  .stage-aside {
-    position: relative;
-    border-left: 1px solid var(--border);
-    background: var(--ink-50);
-    overflow: hidden;
+  /* Reveal-on-scroll, ported from the design canvas */
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 
-  .stage-aside::before {
+  .reveal-on [data-rise] {
+    opacity: 0;
+  }
+
+  [data-rise].in {
+    animation: rise 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-rise] {
+      opacity: 1 !important;
+    }
+    [data-rise].in {
+      animation: none;
+    }
+  }
+
+  /* The story stage: a bordered banner in normal document flow up to 900px,
+     pinned full-height on the right via position: fixed above that — the
+     same technique the canvas uses, so the stage sits correctly between the
+     hero and "Selected work" at every viewport width with no JS reordering. */
+  .stage-panel {
+    position: relative;
+    background: var(--ink-50);
+    overflow: hidden;
+    height: 68vh;
+    min-height: 400px;
+    margin: clamp(56px, 9vh, 88px) 0 0;
+    border: 1px solid var(--ink-200);
+    border-radius: 20px;
+  }
+
+  .stage-panel::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -673,45 +770,27 @@ const pubs = [
     height: 100%;
   }
 
-  /* The canvas was authored as a fixed 1440×900 two-column preview; below that
-     it degrades to a single scrolling column with the stage as a shorter
-     banner rather than a full-height sidebar. */
-  @media (max-width: 860px) {
-    .shell {
-      height: auto;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Flatten .col so its sections become direct flex items of .shell —
-       lets the stage slot in right after the hero via `order`, instead of
-       always trailing at the very end of the page behind the footer. */
+  @media (min-width: 901px) {
     .col {
-      display: contents;
+      padding-right: calc(46% + clamp(28px, 5vw, 76px)) !important;
     }
 
-    .site-header,
-    .hero,
-    .section {
-      padding-inline: 20px;
+    .stage-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 46%;
+      height: auto;
+      min-height: 0;
+      margin: 0;
+      border-radius: 0;
+      border: 0;
+      border-left: 1px solid var(--ink-200);
     }
+  }
 
-    .site-header { order: 0; }
-    .hero { order: 1; }
-
-    .stage-aside {
-      order: 2;
-      height: 60vh;
-      border-left: none;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    #work { order: 3; }
-    #track { order: 4; }
-    #publications { order: 5; }
-    #contact { order: 6; }
-
+  @media (max-width: 860px) {
     .site-header {
       flex-wrap: wrap;
       row-gap: 10px;
