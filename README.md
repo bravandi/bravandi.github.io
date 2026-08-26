@@ -1,34 +1,80 @@
 # ravandi.ai
 
-Personal site for Cyrus B. Ravandi. Plain HTML + CSS, no build step.
-Served by GitHub Pages from the `master` branch root.
+Personal site for Cyrus B. Ravandi. Built with [Astro](https://astro.build),
+rendered to static HTML at build time, deployed to GitHub Pages on the apex
+domain `ravandi.ai`.
 
-## Files
+One route (`/`), ported from a Claude Design canvas (`test-emergence-exact`):
+a two-column CV — scrolling copy on the left, a particle "emergence story"
+canvas animation fixed on the right.
 
-| File | Purpose |
-| --- | --- |
-| `index.html` | The whole page. Edit the text here. |
-| `styles.css` | All styling. Colors live in the `:root` block at the top. |
-| `CNAME` | Tells GitHub Pages the custom domain is `ravandi.ai`. Do not delete. |
+## Run it
 
-The `figures/`, `linked_in_*.png`, and `publons_icon_*.png` files are leftovers
-from the 2019 version of this site, kept in case anything still links to them.
+```sh
+npm install
+npm run dev        # http://localhost:4321
+npm run build      # -> dist/
+npm run preview    # serve dist/ locally
+npm run check      # astro check — types and template diagnostics
+```
+
+Node 22+.
+
+## Layout
+
+```
+public/
+  fonts/           Archivo woff2 subsets, self-hosted (no third-party requests)
+  images/          cyrus-headshot.jpg
+  CNAME            Pins the custom domain on every deploy
+  robots.txt       Points at the sitemap
+src/
+  layouts/
+    Base.astro     The page's <head>: title, description, canonical, OG,
+                    Twitter card, font preload
+  pages/
+    index.astro    The whole page — content, layout, and scoped styles
+  scripts/
+    emergence-story.js  The right-column particle simulation, a self-contained
+                         vanilla custom element (<story-stage>)
+  styles/
+    global.css     Design tokens (LUFAI design system: colors, spacing, the
+                    Button component) ported from the design canvas, with
+                    Archivo substituted for the canvas's default IRANSansX
+                    (a Persian typeface — not needed for all-English copy)
+```
 
 ## Editing
 
+Content (work history, stats, publications) is inlined as plain data at the
+top of `src/pages/index.astro` — edit it there, no CMS.
+
 ```sh
 git pull
-# edit index.html
-open index.html          # preview locally — just open the file, no server needed
+# edit src/pages/index.astro
+npm run dev
 git commit -am "update bio"
 git push
 ```
 
-Live within a minute or so of pushing.
+GitHub Actions builds and deploys on every push to `master`.
+
+## Deploying
+
+`.github/workflows/deploy.yml` builds and deploys on every push to `master`,
+and can be run by hand from the Actions tab. Pages must be configured with
+`build_type: workflow` (Settings → Pages → Build and deployment → Source:
+GitHub Actions) for this to serve — the site no longer deploys from the
+branch root directly.
+
+The custom domain is set in the repository's Pages settings and pinned by
+`public/CNAME`. If the domain is ever removed, set `base: '/ravandi.ai/'` in
+`astro.config.mjs` or every asset URL will 404.
 
 ## DNS
 
-The apex domain `ravandi.ai` points at GitHub's Pages IPs via four `A` records:
+The apex domain `ravandi.ai` points at GitHub's Pages IPs via four `A`
+records:
 
 ```
 185.199.108.153

@@ -1,0 +1,319 @@
+/*
+ * Design tokens + component styles ported from the "test-emergence-exact"
+ * Claude Design canvas (LUFAI design system). Archivo is substituted for the
+ * canvas's default IRANSansX (a proprietary Persian typeface) — same
+ * self-hosted-font approach as diligence-bio-website, no Persian-font
+ * dependency for an all-English page. Only the color/spacing/shadow/motion
+ * tokens and the Button component classes actually used on this page are
+ * kept; unused component classes (inputs, switches, tabs, etc.) are dropped.
+ */
+
+/* ---------------------------------------------------------- Fonts (Archivo, self-hosted) */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------------------------------------------------------- Colors */
+:root {
+  /* Brand violet ramp */
+  --violet-50:  #F4F0FF;
+  --violet-100: #EBE3FF;
+  --violet-200: #D6C4FF;
+  --violet-300: #B79BFF;
+  --violet-400: #9B6CFF;
+  --violet-500: #8B5CF6;
+  --violet-600: #7C3AED;
+  --violet-700: #6D28D9;
+  --violet-800: #581C9E;
+  --violet-900: #3D1470;
+
+  /* Magenta / accent */
+  --magenta-400: #E85FA0;
+  --magenta-500: #D9407E;
+  --magenta-600: #C32C6A;
+
+  /* Orange (gradient tail) */
+  --orange-400: #FB923C;
+  --orange-500: #F97316;
+  --orange-600: #EA6307;
+
+  /* Neutrals */
+  --ink-950: #14101F;
+  --ink-900: #1A1430;
+  --ink-800: #2D2A45;
+  --ink-700: #433F5C;
+  --ink-600: #5B5675;
+  --ink-500: #767190;
+  --ink-400: #9A95B4;
+  --ink-300: #C2BDD6;
+  --ink-200: #E4E0F0;
+  --ink-150: #ECEAF5;
+  --ink-100: #F2F0F9;
+  --ink-50:  #F8F7FC;
+  --white:   #FFFFFF;
+
+  /* Signature gradients */
+  --gradient-brand: linear-gradient(135deg, #6D28D9 0%, #9333EA 42%, #BE185D 72%, #EA6307 100%);
+  --gradient-cta:   linear-gradient(90deg,  #5B21B6 0%, #7C3AED 42%, #A21C5A 70%, #C2510F 100%);
+  --gradient-soft:  linear-gradient(135deg, #F4F0FF 0%, #FCF0F8 100%);
+
+  /* Semantic aliases */
+  --surface:       var(--white);
+  --surface-hover: var(--ink-100);
+  --border:        var(--ink-200);
+  --border-strong: var(--ink-300);
+  --text-strong:   var(--ink-900);
+  --text-body:     var(--ink-800);
+  --text-muted:    var(--ink-500);
+  --primary:        var(--violet-600);
+  --primary-hover:  var(--violet-700);
+  --primary-soft:   var(--violet-50);
+
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------- Spacing / radius / shadow / motion */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+
+  --radius-pill: 999px;
+
+  --shadow-cta: 0 12px 30px rgba(201, 44, 106, 0.30);
+  --shadow-lg:  0 18px 40px rgba(45, 30, 90, 0.12), 0 4px 12px rgba(45, 30, 90, 0.06);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+}
+
+/* ---------------------------------------------------------- Typography */
+:root {
+  --font-sans: 'Archivo', system-ui, sans-serif;
+
+  --fw-regular: 400;
+  --fw-demibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+
+  --text-xs:  0.75rem;
+  --text-sm:  0.8125rem;
+  --text-base:0.875rem;
+  --text-md:  1rem;
+  --text-lg:  1.125rem;
+
+  font-size: 16px;
+}
+
+/* ---------------------------------------------------------- Base reset */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--fw-regular);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-body);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--text-strong);
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+}
+
+p { margin: 0; }
+
+a { color: var(--ink-900); text-decoration: none; }
+a:hover { color: var(--violet-700); }
+
+button, input, select, textarea { font-family: inherit; font-size: inherit; }
+
+::selection { background: rgba(139, 92, 246, 0.18); }
+
+:focus-visible {
+  outline: 3px solid rgba(139, 92, 246, 0.35);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--ink-200);
+  border-radius: var(--radius-pill);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-400); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------------------------------------------------------- Button (lf-btn subset actually used on the page) */
+.lf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 42px;
+  padding: 0 var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--fw-demibold);
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: transform var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+}
+.lf-btn:active { transform: translateY(1px) scale(0.99); }
+
+.lf-btn--lg { height: 52px; padding: 0 var(--space-7); font-size: var(--text-md); }
+
+/* Primary = signature CTA gradient (default) */
+.lf-btn--primary {
+  background-image: var(--gradient-cta);
+  color: #fff;
+  box-shadow: var(--shadow-cta);
+}
+.lf-btn--primary:hover { filter: brightness(1.06); box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+/* Secondary = outline */
+.lf-btn--secondary {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--border-strong);
+}
+.lf-btn--secondary:hover { border-color: var(--primary); background: var(--primary-soft); }
+
+/* Ghost */
+.lf-btn--ghost { background: transparent; color: var(--text-body); }
+.lf-btn--ghost:hover { background: var(--surface-hover); }
