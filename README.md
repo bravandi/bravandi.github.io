@@ -84,38 +84,68 @@ Both values are wall-clock milliseconds and are **not** scaled by the element's
 
 ### Knowledge graph
 
-The `KNOWLEDGE GRAPH` step only. Links everywhere else are drawn between
-particles closer than 46px; its rings sit just outside that, so without a boost
-it renders as separate arcs rather than a connected graph.
+The `KNOWLEDGE GRAPH` step only. Every other step draws an edge between any two
+particles closer than 46px, which gives a uniform lattice — no hubs, no
+shortcuts. This step instead generates a real topology and draws that.
 
 ```json
 {
   "graph": {
-    "linkBoost": 1.55,
+    "topology": {
+      "communities": 6,
+      "attach": 2,
+      "lattice": 1,
+      "rewire": 0.07,
+      "globalEdges": 42,
+      "bridges": 10,
+      "seed": 7
+    },
+    "edgeAlpha": 0.36,
+    "hubScale": 1,
     "metaPaths": {
-      "enabled": true,
-      "count": 2,
-      "length": 8,
-      "intervalMs": 2600,
-      "width": 1.5,
-      "color": "#D9407E",
-      "pulse": true
+      "enabled": true, "count": 2, "length": 8, "intervalMs": 2600,
+      "pulseMs": 1300, "tail": 0.22, "dim": 0.5, "width": 2.2,
+      "color": "#D9407E", "pulse": true
     }
   }
 }
 ```
 
-- `linkBoost` — multiplies the 46px link radius on that step. 1 leaves it the
-  same as every other step; 1.55 is enough to connect adjacent rings. The radius
-  is in pixels, so a narrow stage looks denser than a wide one.
-- `metaPaths` — chains of relations lit up over the graph, re-picked at random
-  every `intervalMs`. `count` is how many at once, `length` how many nodes each
-  walks through, `pulse` the dot that travels along them. `enabled: false`
-  turns the whole effect off and leaves the denser graph.
+The graph mixes two models. **Barabási–Albert** gives the scale-free part: each
+node attaches preferentially to already-well-connected ones, so a few hubs
+emerge instead of every node having the same degree. **Watts–Strogatz** gives
+the small-world part: a ring lattice for local clustering (triangles), plus
+rewired long-range edges so any two nodes stay a few hops apart.
 
-The walk follows real links and prefers to keep its heading, so a path travels
-across the graph instead of doubling back. A path is re-picked early if the
-particles drift far enough apart to stretch it.
+- `communities` — clusters. Each gets its own BA graph, laid out as a hub ringed
+  by its neighbours, so the degree hierarchy is visible in the layout.
+- `attach` — BA edges per new node. Higher is denser and flattens the hubs.
+- `lattice` / `rewire` — Watts–Strogatz. `lattice` is how many ring neighbours
+  each node links to; `rewire` is the fraction redirected to a random node.
+- `globalEdges` — a preferential-attachment pass across the whole graph. This is
+  what produces the few genuinely large hubs; per-community BA alone caps hub
+  degree at about `2·sqrt(community size)`.
+- `bridges` — extra hub-to-hub edges between communities.
+- `seed` — the graph is deterministic; change this for a different one.
+- `edgeAlpha` / `hubScale` — edge opacity, and a multiplier on the
+  degree-proportional node radius.
+- `metaPaths` — chains of relations lit up over the graph, re-picked at random
+  every `intervalMs`. The walk follows real edges from a well-connected node and
+  prefers to keep its heading, so a path travels instead of doubling back. Each
+  path is seeded in a different community when one is free.
+  - `pulse` / `pulseMs` / `tail` — a lit segment sweeps the path to show the
+    relation being traversed. `pulseMs` is one traversal (shorter than
+    `intervalMs` means more than one pass per path), `tail` the fraction of the
+    path lit behind the head.
+  - `dim` — how far the graph recedes while a path is lit. This is what makes a
+    path readable over 800-odd edges; its own weight alone is not enough.
+  - `width` / `color` — the path itself. On the light theme the sweep is drawn
+    in a darker shade of `color`, since a lighter one disappears into the page.
+
+Edge weight and node radius both scale with degree, and long edges are drawn
+fainter so the cross-cluster shortcuts read as threads rather than dominating.
+Proximity links cross-fade out as this topology fades in, so the graph appears
+to assemble out of the previous step.
 
 ### Overlay
 

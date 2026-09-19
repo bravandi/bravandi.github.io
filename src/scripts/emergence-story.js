@@ -57,6 +57,121 @@
   ];
   const TRANS = 1500;
   const LINK_PX = 46;
+
+  /* A generated knowledge-graph topology, in place of proximity linking.
+     Barabasi-Albert supplies the scale-free part: each new node attaches
+     preferentially to already-well-connected ones, which produces hubs rather
+     than the uniform degree a geometric graph gives. Watts-Strogatz supplies
+     the small-world part: a ring lattice for local clustering (triangles), plus
+     a handful of rewired long-range edges so any two nodes stay a few hops
+     apart. Deterministic — same seed, same graph on every load. */
+  const shade = (c, k) => c.split(',').map((v) => Math.round(+v * k)).join(',');
+  const lcg = (seed) => { let v = (seed >>> 0) || 1; return () => ((v = (v * 1664525 + 1013904223) >>> 0) / 4294967296); };
+
+  function buildGraph(n, o) {
+    const R = lcg(o.seed), C = Math.max(1, Math.min(o.communities, Math.floor(n / 8)));
+    const comm = new Int32Array(n), per = Math.ceil(n / C);
+    for (let i = 0; i < n; i++) comm[i] = Math.min(C - 1, (i / per) | 0);
+
+    const adj = Array.from({ length: n }, () => []), deg = new Int32Array(n), seen = new Set();
+    const add = (a, b) => {
+      if (a === b) return false;
+      const k = a < b ? a * 65536 + b : b * 65536 + a;
+      if (seen.has(k)) return false;
+      seen.add(k); adj[a].push(b); adj[b].push(a); deg[a]++; deg[b]++; return true;
+    };
+
+    // Barabasi-Albert inside each community. `bag` holds one entry per edge
+    // endpoint, so drawing from it at random is attachment proportional to degree.
+    for (let c = 0; c < C; c++) {
+      const mem = [];
+      for (let i = 0; i < n; i++) if (comm[i] === c) mem.push(i);
+      if (mem.length < 4) continue;
+      add(mem[0], mem[1]); add(mem[1], mem[2]); add(mem[0], mem[2]);
+      const bag = [mem[0], mem[0], mem[1], mem[1], mem[2], mem[2]];
+      for (let j = 3; j < mem.length; j++) {
+        const v = mem[j], took = new Set();
+        for (let e = 0; e < o.attach; e++) {
+          for (let guard = 0; guard < 24; guard++) {
+            const t = bag[(R() * bag.length) | 0];
+            if (t !== v && !took.has(t) && add(v, t)) { took.add(t); bag.push(t, v); break; }
+          }
+        }
+      }
+    }
+
+    // Watts-Strogatz ring lattice: neighbours-of-neighbours close into triangles,
+    // and a rewired fraction becomes a shortcut to a distant part of the graph.
+    for (let i = 0; i < n; i++) {
+      for (let d = 1; d <= o.lattice; d++) {
+        const j = (i + d) % n;
+        if (R() < o.rewire) add(i, (R() * n) | 0);
+        else if (comm[i] === comm[j]) add(i, j);
+      }
+    }
+
+    // Global preferential attachment: source uniform, target proportional to
+    // degree, across the whole graph. Sharpens the tail and crosses clusters.
+    if (o.globalEdges > 0) {
+      const bag = [];
+      for (let i = 0; i < n; i++) for (let d = 0; d < deg[i]; d++) bag.push(i);
+      if (bag.length) {
+        for (let k = 0, guard = 0; k < o.globalEdges && guard < o.globalEdges * 16; guard++) {
+          const a = (R() * n) | 0, b = bag[(R() * bag.length) | 0];
+          if (add(a, b)) { bag.push(b, a); k++; }
+        }
+      }
+    }
+
+    // Bridges between communities, hub to hub — the edges that keep the
+    // diameter small once the clusters exist.
+    const rank = Array.from({ length: n }, (_, i) => i).sort((a, b) => deg[b] - deg[a] || a - b);
+    const hubs = rank.slice(0, Math.max(3, Math.round(n * 0.05)));
+    for (let k = 0, guard = 0; k < o.bridges && guard < o.bridges * 12; guard++) {
+      const a = hubs[(R() * hubs.length) | 0], b = hubs[(R() * hubs.length) | 0];
+      if (comm[a] !== comm[b] && add(a, b)) k++;
+    }
+
+    // Layout: hub at the middle of its cluster, the rest in rings around it, so
+    // the degree hierarchy is visible rather than just encoded in the edges.
+    const cen = [];
+    for (let c = 0; c < C; c++) {
+      if (C >= 5 && c === 0) { cen.push([0.5, 0.5]); continue; }
+      const k = C >= 5 ? c - 1 : c, tot = C >= 5 ? C - 1 : C;
+      const a = (k / tot) * Math.PI * 2 - Math.PI / 2 + 0.3;
+      cen.push([0.5 + Math.cos(a) * 0.33, 0.5 + Math.sin(a) * 0.40]);
+    }
+    const posC = new Array(n), posO = new Array(n), rings = [1, 6, 12, 18, 26, 34, 44, 56];
+    for (let c = 0; c < C; c++) {
+      const mem = [];
+      for (let i = 0; i < n; i++) if (comm[i] === c) mem.push(i);
+      mem.sort((a, b) => deg[b] - deg[a] || a - b);
+      const ctr = cen[c];
+      for (let placed = 0, ri = 0; placed < mem.length; ri++) {
+        const cnt = Math.min(rings[Math.min(ri, rings.length - 1)], mem.length - placed);
+        const rad = ri === 0 ? 0 : 0.026 + ri * 0.024;
+        for (let k = 0; k < cnt; k++) {
+          const i = mem[placed + k];
+          const ang = (k / cnt) * Math.PI * 2 + ri * 0.7 + rnd(i, 67) * 0.4;
+          const jit = 1 + (rnd(i, 71) - 0.5) * 0.32;
+          posC[i] = ctr;
+          posO[i] = [Math.cos(ang) * rad * jit, Math.sin(ang) * rad * jit];
+        }
+        placed += cnt;
+      }
+    }
+
+    const maxD = Math.max(1, ...deg);
+    const size = new Float32Array(n), hot = new Array(n);
+    const cut = deg[rank[Math.min(rank.length - 1, Math.max(2, Math.round(n * 0.035)))]];
+    for (let i = 0; i < n; i++) {
+      size[i] = 0.72 + 1.75 * Math.pow(deg[i] / maxD, 0.62);
+      hot[i] = deg[i] >= cut;
+    }
+    const edges = [];
+    for (let i = 0; i < n; i++) for (const j of adj[i]) if (j > i) edges.push(i, j);
+    return { adj, deg, comm, posC, posO, size, hot, edges, maxD };
+  }
   const rgb = (hex, fallback) => {
     const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
     if (!m) return fallback;
@@ -91,6 +206,7 @@
       this.timing = this._readTiming();
       this.ui = this._readOverlay();
       this.gfx = this._readGraph();
+      this.G = buildGraph(this.n, this.gfx.topology);
 
       this.style.display = 'block'; this.style.position = 'relative';
       this.style.width = '100%'; this.style.height = '100%';
@@ -105,7 +221,7 @@
       this.t0 = performance.now(); this.mouse = { x: -9, y: -9, on: false };
 
       this.p = Array.from({ length: this.n }, (_, i) => ({
-        x: rnd(i, 3), y: rnd(i, 4), vx: 0, vy: 0, ax: 0, ay: 0, bx: 0, by: 0,
+        i: i, x: rnd(i, 3), y: rnd(i, 4), vx: 0, vy: 0, ax: 0, ay: 0, bx: 0, by: 0,
         pop: i % 2, hot: false, ph: rnd(i, 9) * 6.28
       }));
       if (this.hasAttribute('controls')) this._overlay();
@@ -131,7 +247,21 @@
     static get observedAttributes() { return ['timing', 'speed', 'hold', 'mouse-radius', 'mouse-force', 'mouseradius', 'mouseforce', 'wiggle', 'mono']; }
     attributeChangedCallback(name, _old, v) {
       if (!this._built) return;
-      if (name === 'timing') { this.cfg = this._readCfg(); this.timing = this._readTiming(); this.ui = this._readOverlay(); this._applyOverlayStyle(); }
+      if (name === 'timing') {
+        this.cfg = this._readCfg();
+        this.timing = this._readTiming();
+        this.ui = this._readOverlay();
+        const was = JSON.stringify(this.gfx.topology);
+        this.gfx = this._readGraph();
+        // Only regenerate the graph when its own parameters moved — rebuilding
+        // relocates every node, so a colour tweak must not trigger it.
+        if (JSON.stringify(this.gfx.topology) !== was) {
+          this.G = buildGraph(this.n, this.gfx.topology);
+          this._meta = null;
+          this._retarget();
+        }
+        this._applyOverlayStyle();
+      }
       else if (name === 'speed') { this.speed = parseFloat(v) || 1; this.timing = this._readTiming(); }
       else if (name === 'hold') { this.holdMs = parseFloat(v) || 3400; this.timing = this._readTiming(); }
       else if (name === 'mouse-radius' || name === 'mouseradius') this.mRad = parseFloat(v) || 0;
@@ -301,17 +431,31 @@
       const g = this.cfg.graph || {}, m = g.metaPaths || {};
       const num = (v, dft) => (Number.isFinite(parseFloat(v)) ? parseFloat(v) : dft);
       const bool = (v, dft) => (v === undefined || v === null ? dft : v !== false);
-      const boost = Math.max(1, num(g.linkBoost, 1.55));
+      const t = g.topology || {};
       return {
-        linkBoost: boost,
-        cellPx: LINK_PX * boost,
+        topology: {
+          communities: Math.max(1, Math.round(num(t.communities, 6))),
+          attach: Math.max(1, Math.round(num(t.attach, 2))),
+          lattice: Math.max(0, Math.round(num(t.lattice, 1))),
+          rewire: Math.min(1, Math.max(0, num(t.rewire, 0.11))),
+          globalEdges: Math.max(0, Math.round(num(t.globalEdges, 70))),
+          bridges: Math.max(0, Math.round(num(t.bridges, 14))),
+          seed: Math.round(num(t.seed, 7)),
+        },
+        edgeAlpha: num(g.edgeAlpha, 0.36),
+        hubScale: num(g.hubScale, 1),
+        cellPx: LINK_PX,
         meta: {
           on: bool(m.enabled, true),
           count: Math.max(0, Math.round(num(m.count, 2))),
           length: Math.max(2, Math.round(num(m.length, 9))),
           intervalMs: Math.max(400, num(m.intervalMs, 2600)),
-          width: num(m.width, 1.5),
+          width: num(m.width, 2.2),
+          pulseMs: Math.max(200, num(m.pulseMs, 1300)),
+          tail: Math.min(0.9, Math.max(0.03, num(m.tail, 0.22))),
+          dim: Math.min(0.9, Math.max(0, num(m.dim, 0.5))),
           rgb: rgb(m.color, this.mono ? (this.dark ? '214,209,236' : '67,63,92') : '217,64,126'),
+          deep: shade(rgb(m.color, '217,64,126'), this.dark ? 1.25 : 0.68),
           pulse: bool(m.pulse, true),
         },
       };
@@ -349,10 +493,16 @@
     }
     _retarget(init) {
       const a = F[this.stage], b = F[this.next];
+      const asp = this.w && this.h ? Math.min(1, this.w / this.h) : 1;
+      const at = (f, i, q) => {
+        if (!f.graph) return f.pos(i, this.n, q.pop);
+        const c = this.G.posC[i], o = this.G.posO[i];
+        return [cl(c[0] + o[0]), cl(c[1] + o[1] * asp)];
+      };
       this.p.forEach((q, i) => {
-        const A = a.pos(i, this.n, q.pop), B = b.pos(i, this.n, q.pop);
+        const A = at(a, i, q), B = at(b, i, q);
         q.ax = A[0]; q.ay = A[1]; q.bx = B[0]; q.by = B[1];
-        q.hot = !!a.hot(i);
+        q.hot = a.graph ? this.G.hot[i] : !!a.hot(i);
         if (init) { q.x = A[0]; q.y = A[1]; }
       });
       this.dispatchEvent(new CustomEvent('stagechange', { detail: { index: this.stage, label: a.label, caption: a.caption } }));
@@ -362,6 +512,7 @@
       this.w = Math.max(1, r.width); this.h = Math.max(1, r.height);
       this.canvas.width = this.w * d; this.canvas.height = this.h * d;
       this.ctx.setTransform(d, 0, 0, d, 0, 0);
+      if (this.p && (F[this.stage].graph || F[this.next].graph)) this._retarget();
       this._fitOverlay();
     }
     /* Keep the top bar legible without letting it overrun a narrow stage: the
@@ -457,62 +608,66 @@
     /* A meta path is a chain of relations — disease → gene → pathway → drug.
        Walk the adjacency the link pass just built, preferring unvisited
        neighbours so the walk travels instead of oscillating between two nodes. */
-    _walk(adj, len) {
-      const keys = [...adj.keys()];
-      if (!keys.length) return null;
-      let node = keys[(Math.random() * keys.length) | 0];
+    _walk(len, taken) {
+      const G = this.G, P = this.p;
+      // Start from a well-connected node — a meta path runs through the hubs,
+      // not the leaves — and from a cluster no other path has claimed.
+      let node = -1;
+      for (let tries = 0; tries < 40 && node < 0; tries++) {
+        const c = (Math.random() * this.n) | 0;
+        if (G.deg[c] >= 3 && !(taken && taken.has(G.comm[c]))) node = c;
+      }
+      for (let tries = 0; tries < 30 && node < 0; tries++) {
+        const c = (Math.random() * this.n) | 0;
+        if (G.deg[c] >= 3) node = c;
+      }
+      if (node < 0) return null;
+      if (taken) taken.add(G.comm[node]);
       const path = [node], seen = new Set(path);
       let hx = null, hy = null;
       while (path.length < len) {
-        const nb = adj.get(node);
-        if (!nb) break;
-        const open = nb.filter((x) => !seen.has(x));
+        const open = G.adj[node].filter((x) => !seen.has(x));
         if (!open.length) break;
         let pick;
         if (hx === null) {
           pick = open[(Math.random() * open.length) | 0];
         } else {
-          // Score each candidate on how well it continues the current heading,
-          // then choose at random among the near-best — directed, not rigid.
+          // Prefer the neighbour that best continues the heading, chosen at
+          // random among the near-best, so paths travel instead of doubling back.
           let best = -2, tied = [];
           for (const c of open) {
-            const dx = c.x - node.x, dy = c.y - node.y, mg = Math.hypot(dx, dy) || 1;
+            const dx = P[c].x - P[node].x, dy = P[c].y - P[node].y, mg = Math.hypot(dx, dy) || 1;
             const dot = (dx / mg) * hx + (dy / mg) * hy;
             if (dot > best + 1e-6) { best = dot; tied = [c]; }
             else if (dot > best - 0.18) tied.push(c);
           }
           pick = tied[(Math.random() * tied.length) | 0];
         }
-        const dx = pick.x - node.x, dy = pick.y - node.y, mg = Math.hypot(dx, dy) || 1;
+        const dx = P[pick].x - P[node].x, dy = P[pick].y - P[node].y, mg = Math.hypot(dx, dy) || 1;
         hx = dx / mg; hy = dy / mg;
         node = pick; seen.add(node); path.push(node);
       }
       return path.length >= 3 ? path : null;
     }
-    _drawMeta(ctx, X, Y, adj, amt, now, R) {
-      const m = this.gfx.meta;
-      const stretched = (pth) => {
-        for (let i = 1; i < pth.length; i++) {
-          if (Math.hypot(X(pth[i]) - X(pth[i - 1]), Y(pth[i]) - Y(pth[i - 1])) > R * 1.5) return true;
-        }
-        return false;
-      };
-      const stale = !this._meta || now - this._meta.born > m.intervalMs
-        || this._meta.paths.some(stretched);
-      if (stale) {
-        const paths = [];
+    _metaTick(now, amt) {
+      const m = this.gfx.meta, P = this.p;
+      if (!m.on || !m.count || amt <= 0.01) return 0;
+      if (!this._meta || now - this._meta.born > m.intervalMs) {
+        const paths = [], taken = new Set();
         for (let i = 0; i < m.count; i++) {
-          const pth = this._walk(adj, m.length);
-          if (pth) paths.push(pth);
+          const pth = this._walk(m.length, taken);
+          if (pth) paths.push(pth.map((ix) => P[ix]));
         }
         this._meta = { paths, born: now };
       }
-      const paths = this._meta.paths;
-      if (!paths.length) return;
+      if (!this._meta.paths.length) return 0;
       // Fade each set in and out over its own lifetime so paths cross-dissolve.
       const age = Math.min(1, (now - this._meta.born) / m.intervalMs);
       const ramp = 0.16;
-      const a = amt * (age < ramp ? age / ramp : age > 1 - ramp ? (1 - age) / ramp : 1);
+      return amt * (age < ramp ? age / ramp : age > 1 - ramp ? (1 - age) / ramp : 1);
+    }
+    _drawMeta(ctx, X, Y, a, now) {
+      const m = this.gfx.meta, paths = this._meta.paths;
       if (a <= 0.01) return;
       const prevCap = ctx.lineCap, prevJoin = ctx.lineJoin;
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -520,37 +675,67 @@
         ctx.beginPath();
         ctx.moveTo(X(pth[0]), Y(pth[0]));
         for (let i = 1; i < pth.length; i++) ctx.lineTo(X(pth[i]), Y(pth[i]));
-        ctx.strokeStyle = 'rgba(' + m.rgb + ',' + (0.10 * a).toFixed(3) + ')';
-        ctx.lineWidth = m.width * 3.4; ctx.stroke();
-        ctx.strokeStyle = 'rgba(' + m.rgb + ',' + (0.85 * a).toFixed(3) + ')';
+        ctx.strokeStyle = 'rgba(' + m.rgb + ',' + (0.18 * a).toFixed(3) + ')';
+        ctx.lineWidth = m.width * 4.5; ctx.stroke();
+        ctx.strokeStyle = 'rgba(' + m.rgb + ',' + (0.95 * a).toFixed(3) + ')';
         ctx.lineWidth = m.width; ctx.stroke();
         for (const q of pth) {
-          ctx.beginPath(); ctx.arc(X(q), Y(q), m.width * 1.6, 0, 6.284);
+          ctx.beginPath(); ctx.arc(X(q), Y(q), m.width * 1.5, 0, 6.284);
           ctx.fillStyle = 'rgba(' + m.rgb + ',' + a.toFixed(3) + ')'; ctx.fill();
         }
         if (m.pulse) this._pulse(ctx, X, Y, pth, a, now, m);
       }
       ctx.lineCap = prevCap; ctx.lineJoin = prevJoin; ctx.lineWidth = 0.7;
     }
-    /* A dot running the length of the path — the relation being traversed. */
+    /* A lit segment sweeping the length of the path — the relation being
+       traversed. A moving dot alone was too easy to miss; a comet with a tail
+       shows both position and direction. */
     _pulse(ctx, X, Y, pth, a, now, m) {
-      let total = 0;
       const seg = [];
+      let total = 0;
       for (let i = 1; i < pth.length; i++) {
         const d = Math.hypot(X(pth[i]) - X(pth[i - 1]), Y(pth[i]) - Y(pth[i - 1]));
         seg.push(d); total += d;
       }
       if (total < 1) return;
-      let at = ((now % m.intervalMs) / m.intervalMs) * total, i = 0;
-      while (i < seg.length && at > seg[i]) { at -= seg[i]; i++; }
-      if (i >= seg.length) return;
-      const t = seg[i] ? at / seg[i] : 0;
-      const px = X(pth[i]) + (X(pth[i + 1]) - X(pth[i])) * t;
-      const py = Y(pth[i]) + (Y(pth[i + 1]) - Y(pth[i])) * t;
-      ctx.beginPath(); ctx.arc(px, py, m.width * 3.2, 0, 6.284);
-      ctx.fillStyle = 'rgba(' + m.rgb + ',' + (0.2 * a).toFixed(3) + ')'; ctx.fill();
-      ctx.beginPath(); ctx.arc(px, py, m.width * 1.35, 0, 6.284);
-      ctx.fillStyle = 'rgba(255,255,255,' + (0.9 * a).toFixed(3) + ')'; ctx.fill();
+      // Run past the end by the tail length so the comet clears the path
+      // completely before restarting, instead of snapping back mid-stroke.
+      const tail = total * m.tail;
+      const head = ((now % m.pulseMs) / m.pulseMs) * (total + tail);
+      const pts = this._span(X, Y, pth, seg, Math.max(0, head - tail), Math.min(total, head));
+      if (pts.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.strokeStyle = 'rgba(' + m.rgb + ',' + (0.38 * a).toFixed(3) + ')';
+        ctx.lineWidth = m.width * 6; ctx.stroke();
+        ctx.strokeStyle = 'rgba(' + m.deep + ',' + a.toFixed(3) + ')';
+        ctx.lineWidth = m.width * 2.4; ctx.stroke();
+      }
+      if (head <= total && pts.length) {
+        const hd = pts[pts.length - 1];
+        ctx.beginPath(); ctx.arc(hd[0], hd[1], m.width * 4.6, 0, 6.284);
+        ctx.fillStyle = 'rgba(' + m.rgb + ',' + (0.32 * a).toFixed(3) + ')'; ctx.fill();
+        ctx.beginPath(); ctx.arc(hd[0], hd[1], m.width * 2.3, 0, 6.284);
+        ctx.fillStyle = 'rgba(' + m.deep + ',' + a.toFixed(3) + ')'; ctx.fill();
+        ctx.beginPath(); ctx.arc(hd[0], hd[1], m.width * 0.8, 0, 6.284);
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.95 * a).toFixed(3) + ')'; ctx.fill();
+      }
+    }
+    /* The stretch of a polyline between two distances along it. */
+    _span(X, Y, pth, seg, from, to) {
+      const pts = [];
+      let acc = 0;
+      for (let i = 0; i < seg.length; i++) {
+        const s0 = acc, s1 = acc + seg[i];
+        acc = s1;
+        if (!seg[i] || s1 < from || s0 > to) continue;
+        const ax = X(pth[i]), ay = Y(pth[i]), bx = X(pth[i + 1]), by = Y(pth[i + 1]);
+        const t0 = Math.max(0, (from - s0) / seg[i]), t1 = Math.min(1, (to - s0) / seg[i]);
+        if (!pts.length) pts.push([ax + (bx - ax) * t0, ay + (by - ay) * t0]);
+        pts.push([ax + (bx - ax) * t1, ay + (by - ay) * t1]);
+      }
+      return pts;
     }
     _draw(now) {
       const ctx = this.ctx, w = this.w, h = this.h, padX = 26;
@@ -562,8 +747,8 @@
          hash cell stays at the widest radius any formation asks for, so the
          3x2 neighbour scan below never misses a pair. */
       const eL = smooth(this.blend);
-      const boost = (f) => (f.graph ? this.gfx.linkBoost : 1);
-      const R = LINK_PX * (boost(F[this.stage]) * (1 - eL) + boost(F[this.next]) * eL);
+      const R = LINK_PX;
+      const gAmt = this._metaAmt(eL);
       const cell = this.gfx.cellPx, grid = new Map();
       for (const q of this.p) {
         const key = ((X(q) / cell) | 0) + ':' + ((Y(q) / cell) | 0);
@@ -571,12 +756,9 @@
       }
       ctx.lineWidth = 0.7;
       const base = this.mono ? (this.dark ? '214,209,236' : '67,63,92') : (this.dark ? '139,92,246' : '109,40,217');
-      const metaAmt = this.gfx.meta.on && this.gfx.meta.count ? this._metaAmt(eL) : 0;
-      const adj = metaAmt > 0.01 ? new Map() : null;
-      const link = (a, b) => {
-        let l = adj.get(a); if (!l) { l = []; adj.set(a, l); } l.push(b);
-      };
-      grid.forEach((arr, key) => {
+      // Proximity links fade out exactly as the generated topology fades in.
+      const prox = 1 - gAmt;
+      if (prox > 0.01) grid.forEach((arr, key) => {
         const parts = key.split(':'), cx = +parts[0], cy = +parts[1];
         for (let ox = 0; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
           if (ox === 0 && oy < 0) continue;
@@ -585,24 +767,47 @@
             if (a === b) continue;
             const d = Math.hypot(X(a) - X(b), Y(a) - Y(b));
             if (d < R) {
-              ctx.strokeStyle = 'rgba(' + base + ',' + (0.3 * (1 - d / R)).toFixed(3) + ')';
+              ctx.strokeStyle = 'rgba(' + base + ',' + (0.3 * prox * (1 - d / R)).toFixed(3) + ')';
               ctx.beginPath(); ctx.moveTo(X(a), Y(a)); ctx.lineTo(X(b), Y(b)); ctx.stroke();
-              if (adj) { link(a, b); link(b, a); }
             }
           }
         }
       });
 
+      const metaA = this._metaTick(now, gAmt);
+      if (gAmt > 0.01) {
+        const G = this.G, E = G.edges, P = this.p;
+        // Pull the graph back while a path is lit — contrast is what makes the
+        // path readable over 843 edges, more than its own weight does.
+        const ea = this.gfx.edgeAlpha * gAmt * (1 - this.gfx.meta.dim * metaA);
+        const w0 = w, h0 = h;
+        for (let k = 0; k < E.length; k += 2) {
+          const a = P[E[k]], b = P[E[k + 1]];
+          // Hub edges carry more weight, so the scale-free structure reads at
+          // a glance instead of only in the node sizes.
+          const w = Math.min(G.deg[E[k]], G.deg[E[k + 1]]) / G.maxD;
+          const len = Math.hypot(X(a) - X(b), Y(a) - Y(b));
+          const far = 1 - 0.6 * Math.min(1, len / (Math.min(w0, h0) * 0.55));
+          ctx.strokeStyle = 'rgba(' + base + ',' + (ea * (0.42 + w * 1.5) * far).toFixed(3) + ')';
+          ctx.lineWidth = (0.6 + w * 1.6) * (0.55 + far * 0.45);
+          ctx.beginPath(); ctx.moveTo(X(a), Y(a)); ctx.lineTo(X(b), Y(b)); ctx.stroke();
+        }
+        ctx.lineWidth = 0.7;
+      }
+
       for (const q of this.p) {
         const col = this.mono ? (this.dark ? '#C2BDD6' : '#5B5675') : (q.hot ? HOT : q.pop ? ORANGE : VIOLET);
-        const pulse = 0.85 + Math.sin(now / 900 + q.ph) * 0.15, r = (q.hot ? 2.6 : 1.7) * pulse;
+        const pulse = 0.85 + Math.sin(now / 900 + q.ph) * 0.15;
+        // Radius grows with degree while the graph is up — the BA signature.
+        const ds = 1 + gAmt * (this.G.size[q.i] * this.gfx.hubScale - 1);
+        const r = (q.hot ? 2.6 : 1.7) * pulse * ds;
         if (q.hot) {
           ctx.beginPath(); ctx.arc(X(q), Y(q), r * 3.4, 0, 6.284);
           ctx.fillStyle = this.mono ? 'rgba(150,145,180,0.10)' : 'rgba(217,64,126,0.14)'; ctx.fill();
         }
         ctx.beginPath(); ctx.arc(X(q), Y(q), r, 0, 6.284); ctx.fillStyle = col; ctx.fill();
       }
-      if (adj) this._drawMeta(ctx, X, Y, adj, metaAmt, now, R);
+      if (metaA > 0.01) this._drawMeta(ctx, X, Y, metaA, now);
     }
   }
   if (!window.customElements.get('story-stage')) customElements.define('story-stage', StoryStage);

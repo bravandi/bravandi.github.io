@@ -33,13 +33,26 @@
     }
   },
   "graph": {
-    "linkBoost": 1.55,
+    "topology": {
+      "communities": 6,
+      "attach": 2,
+      "lattice": 1,
+      "rewire": 0.07,
+      "globalEdges": 42,
+      "bridges": 10,
+      "seed": 7
+    },
+    "edgeAlpha": 0.36,
+    "hubScale": 1,
     "metaPaths": {
       "enabled": true,
       "count": 2,
       "length": 8,
       "intervalMs": 2600,
-      "width": 1.5,
+      "pulseMs": 1300,
+      "tail": 0.22,
+      "dim": 0.5,
+      "width": 2.2,
       "color": "#D9407E",
       "pulse": true
     }
