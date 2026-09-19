@@ -1,11 +1,39 @@
 ---
 import Base from '../layouts/Base.astro';
 
-const title = 'Cyrus B. Ravandi — AI for scientific discovery';
+const title = 'Cyrus B. Ravandi — Turning AI strategy into scientific adoption';
 const description =
-  'Data & AI product strategy leader in biopharma research and translational science. Twelve years of computational work, five building AI capability inside R&D.';
+  'Most AI in biopharma research stalls between capability and use. I close that gap by connecting scientific priorities, data, technology, products, and the people accountable for decisions, so AI becomes something researchers trust and reach for.';
+
+// How the work is framed. Authority here comes from the point of view, so
+// these lead the page — before any evidence of what was built.
+const pov = [
+  {
+    t: 'Adoption is the hard part, not the model.',
+    b: 'The capability usually already exists. What is missing is the path from a scientific question to a system a researcher trusts enough to act on — and that path runs through data, product, and organization, not through the architecture.',
+  },
+  {
+    t: 'Measure decisions, not usage.',
+    b: 'Dashboards count logins. The question worth answering is whether a decision was better, or arrived sooner, than it would have without the system. Everything downstream — investment, platform, partnership — gets easier once that is the standard.',
+  },
+  {
+    t: 'Trust is earned on evidence scientists already accept.',
+    b: 'Biological grounding and real clinical-trial decisions make a far better benchmark than a leaderboard score. A model that generalizes on paper and fails on the assets in front of you was never evaluated honestly.',
+  },
+  {
+    t: 'The org chart is part of the architecture.',
+    b: 'Where a capability sits, who owns the data, and who is accountable for the decision it informs shape outcomes more than model choice does. Getting that arrangement wrong is the most common reason good work stalls.',
+  },
+];
 
 const work = [
+  {
+    kicker: 'Capability building',
+    years: '0 → 1',
+    title: 'Capability compounds where pilots do not',
+    body: 'Stood up a dedicated AI team inside R&D and the operating model around it — how work gets selected, how scientists are brought in early, how delivery is judged. The output was never a set of projects; it was a capability the organization keeps using.',
+    tags: ['Team building', 'Operating model', 'Cross-functional leadership'],
+  },
   {
     kicker: 'Enterprise strategy',
     years: '2024 — today',
@@ -14,40 +42,38 @@ const work = [
     tags: ['Product vision', 'Roadmap', 'AI governance', 'Value measurement'],
   },
   {
-    kicker: 'Translational AI',
+    kicker: 'Products in use',
     years: '2023 — 2026',
     title: 'Rare disease borrows from common biology',
-    body: 'Built a translational strategy that used shared mechanism to work around sparse rare-disease data, integrating biological, clinical, and real-world evidence. Applied across seven assets to prioritize repurposing and indication expansion.',
+    body: 'Built a translational strategy that used shared mechanism to work around sparse rare-disease data, integrating biological, clinical, and real-world evidence. Delivered as products scientists use, and applied across seven assets to prioritize repurposing and indication expansion.',
     tags: ['Dis2Vec', 'Knowledge graphs', 'Indication strategy'],
   },
   {
-    kicker: 'Evaluation',
+    kicker: 'Technology & partnerships',
     years: '2023 — today',
     title: 'Benchmark-first, or it does not ship',
-    body: 'Grounded model and vendor assessment in biological evidence and real clinical-trial decisions rather than leaderboard scores — five vendors evaluated, two academic partnerships established, including Orphanet and the European Reference Networks.',
+    body: 'Grounded model and vendor assessment in biological evidence and real clinical-trial decisions rather than leaderboard scores — five external technologies evaluated, two academic partnerships established, including Orphanet and the European Reference Networks.',
     tags: ['Benchmarking', 'Vendor strategy', 'Generalizability'],
   },
 ];
 
 const stats = [
-  { n: '12+', l: 'Years across computational science, data, and AI' },
-  { n: '3', l: 'AI products delivered and adopted in R&D' },
-  { n: '20', l: 'Peer-reviewed publications, 500+ citations' },
+  { n: '3', l: 'AI and data products adopted inside R&D' },
+  { n: '7', l: 'Drug assets informed by translational AI strategy' },
   { n: '30k', l: 'Rare-disease experts reached via Orphanet & ERN' },
+  { n: '20', l: 'Peer-reviewed publications, 500+ citations' },
 ];
 
 const journals = ['Nature Communications', 'Nature Food', 'PNAS', 'Bioinformatics'];
 
+// Selected, not complete — the papers that explain the standards the products
+// are held to. The full list lives on Scholar.
 const pubs = [
   { year: '2026', cite: 'Ravandi, C. B., et al. (2026). Clinical trial and ontology-derived positive and negative benchmark datasets for drug repurposing across rare diseases.', venue: 'Scientific Data', tail: ' (in review).', tag: 'In review', href: 'https://doi.org/10.64898/2026.06.15.732135', link: 'doi.org/10.64898/2026.06.15.732135' },
   { year: '2026', cite: 'Ravandi, C. B., et al. (2026). A mechanistic disease representation framework for therapeutic knowledge transfer across rare and common conditions.', venue: 'bioRxiv', tail: ', 2024.11.19.624381.', tag: 'Preprint', href: 'https://doi.org/10.1101/2024.11.19.624381', link: 'doi.org/10.1101/2024.11.19.624381' },
   { year: '2025', cite: 'Ravandi, C. B., et al. (2025). Topology-driven negative sampling enhances generalizability in protein–protein interaction prediction.', venue: 'Bioinformatics', tail: ', btaf148.', tag: 'Bioinformatics', href: 'https://doi.org/10.1093/bioinformatics/btaf148', link: 'doi.org/10.1093/bioinformatics/btaf148' },
-  { year: '2025', cite: 'Chatterjee, A., Ikica, B., Ravandi, C. B., et al. (2025). Transfer learning for temporal link prediction.', venue: 'International Joint Conference on Neural Networks (IJCNN)', tail: ', 1–8.', tag: 'IEEE IJCNN 2025', href: 'https://doi.org/10.1109/IJCNN64981.2025.11228624', link: 'doi.org/10.1109/IJCNN64981.2025.11228624' },
   { year: '2025', cite: 'Ravandi, C. B., et al. (2025). Prevalence of processed foods in major US grocery stores.', venue: 'Nature Food', tail: '.', tag: 'Nature Food', href: 'https://rdcu.be/d55mU', link: 'rdcu.be/d55mU' },
-  { year: '2024', cite: 'Nabizadeh, M., Nasirian, F., … Ravandi, C. B., et al. (2024). Network physics of attractive colloidal gels: Resilience, rigidity, and phase diagram.', venue: 'Proceedings of the National Academy of Sciences', tail: '.', tag: 'PNAS', href: 'https://doi.org/10.1073/pnas.2316394121', link: 'doi.org/10.1073/pnas.2316394121' },
   { year: '2023', cite: 'Menichetti, G., Ravandi, C. B., et al. (2023). Machine learning prediction of the degree of food processing.', venue: 'Nature Communications', tail: ', 14, 2312.', tag: 'Nature Communications', href: 'https://doi.org/10.1038/s41467-023-37457-1', link: 'doi.org/10.1038/s41467-023-37457-1' },
-  { year: '2019', cite: 'Ravandi, C. B., et al. (2019). Impact of plate size on food waste: Agent-based simulation of food consumption.', venue: 'Resources, Conservation and Recycling', tail: '.', tag: 'Elsevier', href: 'https://doi.org/10.1016/j.resconrec.2019.05.033', link: 'doi.org/10.1016/j.resconrec.2019.05.033' },
-  { year: '2018', cite: 'Ravandi, C. B., et al. (2018). A self-organized resource provisioning for cloud block storage.', venue: 'Future Generation Computer Systems', tail: '.', tag: 'Elsevier', href: 'https://doi.org/10.1016/j.future.2018.06.045', link: 'doi.org/10.1016/j.future.2018.06.045' },
 ];
 ---
 
@@ -60,9 +86,9 @@ const pubs = [
           <span class="brand-name">CYRUS B. RAVANDI</span>
         </div>
         <nav class="site-nav">
+          <a href="#view">Point of view</a>
           <a href="#work">Work</a>
-          <a href="#track">Track record</a>
-          <a href="#publications">Publications</a>
+          <a href="#evidence">Evidence</a>
           <a href="#contact">Contact</a>
         </nav>
       </header>
@@ -74,17 +100,13 @@ const pubs = [
           </div>
           <div class="badge">
             <span class="badge-dot" aria-hidden="true"></span>
-            Boston, MA · Advising &amp; speaking
+            Boston, MA · AI in biopharma R&amp;D
           </div>
         </div>
-        <h1>I turn scientific ambition into <span class="grad-text">AI that earns its place</span>.</h1>
+        <h1>Turning AI strategy into <span class="grad-text">scientific adoption</span>.</h1>
         <p class="lede">
-          Data &amp; AI product strategy leader in biopharma research and translational science. Twelve years of
-          computational work, five of them building AI capability inside R&amp;D — where the measure of a model is
-          not adoption, but a better decision made sooner.
+          Most AI in biopharma research stalls between capability and use. I close that gap by connecting scientific priorities, data, technology, products, and the people accountable for decisions, so AI becomes something researchers trust and reach for.
         </p>
-        <p class="quote"><span class="quote-bar" aria-hidden="true"></span>Discover with Purpose.</p>
-
         <div class="cta">
           <a class="lf-btn lf-btn--primary lf-btn--lg" href="https://www.linkedin.com/in/CyrusRavandi" target="_blank" rel="noopener">
             Follow on LinkedIn
@@ -106,10 +128,31 @@ const pubs = [
         ></story-stage>
       </aside>
 
+      <section id="view" class="section">
+        <div class="section-head section-head--tight">
+          <span class="step-num">01</span>
+          <h2>Point of view</h2>
+        </div>
+        <p class="section-intro">
+          Four things I have come to believe about making AI matter inside a research organization.
+        </p>
+        <ol class="pov-list">
+          {pov.map((p, i) => (
+            <li class="pov" data-rise="0">
+              <span class="pov__n">{String(i + 1).padStart(2, '0')}</span>
+              <div>
+                <p class="pov__t">{p.t}</p>
+                <p class="pov__b">{p.b}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       <section id="work" class="section">
         <div class="section-head">
-          <span class="step-num">01</span>
-          <h2>Selected work</h2>
+          <span class="step-num">02</span>
+          <h2>What I have built</h2>
         </div>
         <div class="work-grid">
           {work.map((w) => (
@@ -130,10 +173,10 @@ const pubs = [
         </div>
       </section>
 
-      <section id="track" class="section">
+      <section id="evidence" class="section">
         <div class="section-head">
-          <span class="step-num">02</span>
-          <h2>Track record</h2>
+          <span class="step-num">03</span>
+          <h2>Evidence</h2>
         </div>
         <div class="stats-grid" data-rise="0">
           {stats.map((s) => (
@@ -150,16 +193,12 @@ const pubs = [
             <span class="journal">{j}</span>
           ))}
         </div>
-      </section>
 
-      <section id="publications" class="section">
-        <div class="section-head section-head--tight">
-          <span class="step-num">03</span>
-          <h2>Publications</h2>
-        </div>
+        <h3 class="sub-head">Selected publications</h3>
         <p class="pubs-intro">
-          Twenty peer-reviewed papers and preprints on generalizability, negative sampling, disease representation,
-          and measurement in biological machine learning — 500+ citations. Recent work:
+          The research record is where the standards come from — work on generalizability, negative sampling,
+          disease representation, and how biological machine learning is measured. It is the same bar I hold
+          products and vendors to.
         </p>
         <ol class="pubs-list">
           {pubs.map((p) => (
@@ -180,7 +219,7 @@ const pubs = [
           ))}
         </ol>
         <p class="pubs-more">
-          Full list on <a href="https://scholar.google.com" target="_blank" rel="noopener">Google Scholar</a>.
+          Twenty papers in total — the full list is on <a href="https://scholar.google.com" target="_blank" rel="noopener">Google Scholar</a>.
         </p>
       </section>
 
@@ -365,24 +404,6 @@ const pubs = [
     text-wrap: pretty;
   }
 
-  .quote {
-    margin: 20px 0 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 16.5px;
-    font-weight: var(--fw-demibold);
-    color: var(--violet-700);
-    font-style: italic;
-  }
-
-  .quote-bar {
-    width: 26px;
-    height: 1px;
-    background: var(--gradient-text);
-    flex: none;
-  }
-
   .cta,
   .cta-row {
     display: flex;
@@ -444,6 +465,92 @@ const pubs = [
     text-transform: uppercase;
     font-weight: var(--fw-bold);
     color: var(--text-strong);
+  }
+
+  .section-intro {
+    margin: 0 0 8px;
+    font-size: 15px;
+    line-height: 1.62;
+    color: var(--ink-600);
+    max-width: 40em;
+    text-wrap: pretty;
+  }
+
+  .sub-head {
+    margin: clamp(46px, 7vh, 72px) 0 12px;
+    font-size: 15px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: var(--fw-bold);
+    color: var(--text-strong);
+  }
+
+  /* Point of view: deliberately un-carded. The work below is evidence and
+     sits in boxes; this is argument and reads as a numbered list. */
+  .pov-list {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    border-top: 1px solid var(--ink-150);
+  }
+
+  .pov {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 20px;
+    padding: 26px 6px 26px 10px;
+    border-bottom: 1px solid var(--ink-150);
+    align-items: start;
+    border-radius: 12px;
+    transition: background 200ms ease, padding-left 220ms var(--ease-out);
+  }
+
+  .pov:hover {
+    background: linear-gradient(90deg, var(--violet-50), rgba(255, 255, 255, 0));
+    padding-left: 16px;
+  }
+
+  .pov__n {
+    font-size: 12.5px;
+    font-weight: var(--fw-bold);
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    padding-top: 4px;
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .pov__t {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.34;
+    letter-spacing: -0.012em;
+    font-weight: var(--fw-demibold);
+    color: var(--ink-950);
+    text-wrap: balance;
+  }
+
+  .pov__b {
+    margin: 9px 0 0;
+    font-size: 15px;
+    line-height: 1.64;
+    color: var(--text-body);
+    max-width: 44em;
+    text-wrap: pretty;
+  }
+
+  @media (max-width: 600px) {
+    .pov {
+      grid-template-columns: 26px minmax(0, 1fr);
+      gap: 12px;
+      padding: 22px 2px;
+    }
+
+    .pov__t {
+      font-size: 17px;
+    }
   }
 
   .work-grid {
@@ -576,7 +683,7 @@ const pubs = [
   }
 
   .pubs-intro {
-    margin: 0 0 30px;
+    margin: 0 0 26px;
     font-size: 15px;
     line-height: 1.62;
     color: var(--ink-600);

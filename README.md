@@ -46,8 +46,8 @@ src/
 
 ## Editing
 
-Content (work history, stats, publications) is inlined as plain data at the
-top of `src/pages/index.astro` — edit it there, no CMS.
+Content (point of view, work, stats, publications) is inlined as plain data at
+the top of `src/pages/index.astro` — edit it there, no CMS.
 
 ```sh
 git pull
