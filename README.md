@@ -82,6 +82,41 @@ A step costs `holdMs + transitionMs`; the full loop is the sum of all ten.
 Both values are wall-clock milliseconds and are **not** scaled by the element's
 `speed` attribute — `speed` only tunes the particle spring.
 
+### Knowledge graph
+
+The `KNOWLEDGE GRAPH` step only. Links everywhere else are drawn between
+particles closer than 46px; its rings sit just outside that, so without a boost
+it renders as separate arcs rather than a connected graph.
+
+```json
+{
+  "graph": {
+    "linkBoost": 1.55,
+    "metaPaths": {
+      "enabled": true,
+      "count": 2,
+      "length": 8,
+      "intervalMs": 2600,
+      "width": 1.5,
+      "color": "#D9407E",
+      "pulse": true
+    }
+  }
+}
+```
+
+- `linkBoost` — multiplies the 46px link radius on that step. 1 leaves it the
+  same as every other step; 1.55 is enough to connect adjacent rings. The radius
+  is in pixels, so a narrow stage looks denser than a wide one.
+- `metaPaths` — chains of relations lit up over the graph, re-picked at random
+  every `intervalMs`. `count` is how many at once, `length` how many nodes each
+  walks through, `pulse` the dot that travels along them. `enabled: false`
+  turns the whole effect off and leaves the denser graph.
+
+The walk follows real links and prefers to keep its heading, so a path travels
+across the graph instead of doubling back. A path is re-picked early if the
+particles drift far enough apart to stretch it.
+
 ### Overlay
 
 Text drawn over the stage, in three groups: `label` is the step name at the top

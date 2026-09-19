@@ -32,6 +32,18 @@
       "colorDark": "#F4F2FB"
     }
   },
+  "graph": {
+    "linkBoost": 1.55,
+    "metaPaths": {
+      "enabled": true,
+      "count": 2,
+      "length": 8,
+      "intervalMs": 2600,
+      "width": 1.5,
+      "color": "#D9407E",
+      "pulse": true
+    }
+  },
   "steps": [
     {
       "label": "RAW SIGNAL",
@@ -50,7 +62,7 @@
     },
     {
       "label": "KNOWLEDGE GRAPH",
-      "holdMs": 1500,
+      "holdMs": 8000,
       "caption": "Relationships become the asset, not the rows."
     },
     {

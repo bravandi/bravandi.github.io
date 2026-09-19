@@ -17,7 +17,7 @@
     { label: 'HARMONIZATION', caption: 'Two vocabularies — biology and machine — learn to align.',
       pos: (i, n, pop) => { const k = Math.floor(i / 2) / Math.max(1, n / 2 - 1);
         return [0.06 + k * 0.88, 0.5 + (pop ? 1 : -1) * (0.07 + rnd(i, 5) * 0.04)]; }, hot: () => false },
-    { label: 'KNOWLEDGE GRAPH', caption: 'Relationships become the asset, not the rows.',
+    { label: 'KNOWLEDGE GRAPH', caption: 'Relationships become the asset, not the rows.', graph: true,
       pos: i => { const rings = [1, 10, 20, 30, 40, 52, 64, 76]; let a = 0, ri = 0;
         while (ri < rings.length - 1 && i >= a + rings[ri]) { a += rings[ri]; ri++; }
         const idx = i - a, cnt = rings[ri], ang = (idx / cnt) * Math.PI * 2 + ri * 0.4;
@@ -56,6 +56,13 @@
       hot: i => rnd(i, 43) > 0.88 }
   ];
   const TRANS = 1500;
+  const LINK_PX = 46;
+  const rgb = (hex, fallback) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+    if (!m) return fallback;
+    const v = parseInt(m[1], 16);
+    return (v >> 16) + ',' + ((v >> 8) & 255) + ',' + (v & 255);
+  };
   const WIDEST = F.reduce((a, b) => (b.label.length > a.length ? b.label : a), '');
 
   class StoryStage extends HTMLElement {
@@ -83,6 +90,7 @@
       this.cfg = this._readCfg();
       this.timing = this._readTiming();
       this.ui = this._readOverlay();
+      this.gfx = this._readGraph();
 
       this.style.display = 'block'; this.style.position = 'relative';
       this.style.width = '100%'; this.style.height = '100%';
@@ -285,6 +293,29 @@
         },
       };
     }
+    /* Knowledge-graph rendering, from the `graph` block of the settings file.
+       `linkBoost` widens the proximity cutoff on that formation only — its
+       rings sit just outside the default radius, so a small boost is what turns
+       a ring of arcs into a connected graph. */
+    _readGraph() {
+      const g = this.cfg.graph || {}, m = g.metaPaths || {};
+      const num = (v, dft) => (Number.isFinite(parseFloat(v)) ? parseFloat(v) : dft);
+      const bool = (v, dft) => (v === undefined || v === null ? dft : v !== false);
+      const boost = Math.max(1, num(g.linkBoost, 1.55));
+      return {
+        linkBoost: boost,
+        cellPx: LINK_PX * boost,
+        meta: {
+          on: bool(m.enabled, true),
+          count: Math.max(0, Math.round(num(m.count, 2))),
+          length: Math.max(2, Math.round(num(m.length, 9))),
+          intervalMs: Math.max(400, num(m.intervalMs, 2600)),
+          width: num(m.width, 1.5),
+          rgb: rgb(m.color, this.mono ? (this.dark ? '214,209,236' : '67,63,92') : '217,64,126'),
+          pulse: bool(m.pulse, true),
+        },
+      };
+    }
     _readTiming() {
       const sp = parseFloat(this.getAttribute('speed') || '1') || 1;
       const t = {
@@ -416,18 +447,135 @@
         q.vx *= damp; q.vy *= damp; q.x += q.vx * f; q.y += q.vy * f;
       }
     }
+    /* How strongly the knowledge-graph formation is on screen: 1 while it is
+       held, falling to 0 as it morphs out (and rising as it morphs in), so the
+       meta paths fade with the formation instead of popping. */
+    _metaAmt(e) {
+      const a = F[this.stage].graph ? 1 - e : 0, b = F[this.next].graph ? e : 0;
+      return Math.max(a, b);
+    }
+    /* A meta path is a chain of relations — disease → gene → pathway → drug.
+       Walk the adjacency the link pass just built, preferring unvisited
+       neighbours so the walk travels instead of oscillating between two nodes. */
+    _walk(adj, len) {
+      const keys = [...adj.keys()];
+      if (!keys.length) return null;
+      let node = keys[(Math.random() * keys.length) | 0];
+      const path = [node], seen = new Set(path);
+      let hx = null, hy = null;
+      while (path.length < len) {
+        const nb = adj.get(node);
+        if (!nb) break;
+        const open = nb.filter((x) => !seen.has(x));
+        if (!open.length) break;
+        let pick;
+        if (hx === null) {
+          pick = open[(Math.random() * open.length) | 0];
+        } else {
+          // Score each candidate on how well it continues the current heading,
+          // then choose at random among the near-best — directed, not rigid.
+          let best = -2, tied = [];
+          for (const c of open) {
+            const dx = c.x - node.x, dy = c.y - node.y, mg = Math.hypot(dx, dy) || 1;
+            const dot = (dx / mg) * hx + (dy / mg) * hy;
+            if (dot > best + 1e-6) { best = dot; tied = [c]; }
+            else if (dot > best - 0.18) tied.push(c);
+          }
+          pick = tied[(Math.random() * tied.length) | 0];
+        }
+        const dx = pick.x - node.x, dy = pick.y - node.y, mg = Math.hypot(dx, dy) || 1;
+        hx = dx / mg; hy = dy / mg;
+        node = pick; seen.add(node); path.push(node);
+      }
+      return path.length >= 3 ? path : null;
+    }
+    _drawMeta(ctx, X, Y, adj, amt, now, R) {
+      const m = this.gfx.meta;
+      const stretched = (pth) => {
+        for (let i = 1; i < pth.length; i++) {
+          if (Math.hypot(X(pth[i]) - X(pth[i - 1]), Y(pth[i]) - Y(pth[i - 1])) > R * 1.5) return true;
+        }
+        return false;
+      };
+      const stale = !this._meta || now - this._meta.born > m.intervalMs
+        || this._meta.paths.some(stretched);
+      if (stale) {
+        const paths = [];
+        for (let i = 0; i < m.count; i++) {
+          const pth = this._walk(adj, m.length);
+          if (pth) paths.push(pth);
+        }
+        this._meta = { paths, born: now };
+      }
+      const paths = this._meta.paths;
+      if (!paths.length) return;
+      // Fade each set in and out over its own lifetime so paths cross-dissolve.
+      const age = Math.min(1, (now - this._meta.born) / m.intervalMs);
+      const ramp = 0.16;
+      const a = amt * (age < ramp ? age / ramp : age > 1 - ramp ? (1 - age) / ramp : 1);
+      if (a <= 0.01) return;
+      const prevCap = ctx.lineCap, prevJoin = ctx.lineJoin;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const pth of paths) {
+        ctx.beginPath();
+        ctx.moveTo(X(pth[0]), Y(pth[0]));
+        for (let i = 1; i < pth.length; i++) ctx.lineTo(X(pth[i]), Y(pth[i]));
+        ctx.strokeStyle = 'rgba(' + m.rgb + ',' + (0.10 * a).toFixed(3) + ')';
+        ctx.lineWidth = m.width * 3.4; ctx.stroke();
+        ctx.strokeStyle = 'rgba(' + m.rgb + ',' + (0.85 * a).toFixed(3) + ')';
+        ctx.lineWidth = m.width; ctx.stroke();
+        for (const q of pth) {
+          ctx.beginPath(); ctx.arc(X(q), Y(q), m.width * 1.6, 0, 6.284);
+          ctx.fillStyle = 'rgba(' + m.rgb + ',' + a.toFixed(3) + ')'; ctx.fill();
+        }
+        if (m.pulse) this._pulse(ctx, X, Y, pth, a, now, m);
+      }
+      ctx.lineCap = prevCap; ctx.lineJoin = prevJoin; ctx.lineWidth = 0.7;
+    }
+    /* A dot running the length of the path — the relation being traversed. */
+    _pulse(ctx, X, Y, pth, a, now, m) {
+      let total = 0;
+      const seg = [];
+      for (let i = 1; i < pth.length; i++) {
+        const d = Math.hypot(X(pth[i]) - X(pth[i - 1]), Y(pth[i]) - Y(pth[i - 1]));
+        seg.push(d); total += d;
+      }
+      if (total < 1) return;
+      let at = ((now % m.intervalMs) / m.intervalMs) * total, i = 0;
+      while (i < seg.length && at > seg[i]) { at -= seg[i]; i++; }
+      if (i >= seg.length) return;
+      const t = seg[i] ? at / seg[i] : 0;
+      const px = X(pth[i]) + (X(pth[i + 1]) - X(pth[i])) * t;
+      const py = Y(pth[i]) + (Y(pth[i + 1]) - Y(pth[i])) * t;
+      ctx.beginPath(); ctx.arc(px, py, m.width * 3.2, 0, 6.284);
+      ctx.fillStyle = 'rgba(' + m.rgb + ',' + (0.2 * a).toFixed(3) + ')'; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, m.width * 1.35, 0, 6.284);
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.9 * a).toFixed(3) + ')'; ctx.fill();
+    }
     _draw(now) {
       const ctx = this.ctx, w = this.w, h = this.h, padX = 26;
       const padTop = 40, padBot = (this.capBar ? this.capBar.getBoundingClientRect().height : 20) + 14;
       ctx.clearRect(0, 0, w, h);
       const X = q => padX + q.x * (w - padX * 2), Y = q => padTop + q.y * Math.max(40, h - padTop - padBot);
-      const cell = 46, grid = new Map();
+      /* The link radius is a property of the formation, blended across the
+         morph so the graph densifies as it forms rather than snapping. The
+         hash cell stays at the widest radius any formation asks for, so the
+         3x2 neighbour scan below never misses a pair. */
+      const eL = smooth(this.blend);
+      const boost = (f) => (f.graph ? this.gfx.linkBoost : 1);
+      const R = LINK_PX * (boost(F[this.stage]) * (1 - eL) + boost(F[this.next]) * eL);
+      const cell = this.gfx.cellPx, grid = new Map();
       for (const q of this.p) {
         const key = ((X(q) / cell) | 0) + ':' + ((Y(q) / cell) | 0);
         let arr = grid.get(key); if (!arr) { arr = []; grid.set(key, arr); } arr.push(q);
       }
       ctx.lineWidth = 0.7;
       const base = this.mono ? (this.dark ? '214,209,236' : '67,63,92') : (this.dark ? '139,92,246' : '109,40,217');
+      const metaAmt = this.gfx.meta.on && this.gfx.meta.count ? this._metaAmt(eL) : 0;
+      const adj = metaAmt > 0.01 ? new Map() : null;
+      const link = (a, b) => {
+        let l = adj.get(a); if (!l) { l = []; adj.set(a, l); } l.push(b);
+      };
       grid.forEach((arr, key) => {
         const parts = key.split(':'), cx = +parts[0], cy = +parts[1];
         for (let ox = 0; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
@@ -436,13 +584,15 @@
           for (const a of arr) for (const b of o) {
             if (a === b) continue;
             const d = Math.hypot(X(a) - X(b), Y(a) - Y(b));
-            if (d < cell) {
-              ctx.strokeStyle = 'rgba(' + base + ',' + (0.3 * (1 - d / cell)).toFixed(3) + ')';
+            if (d < R) {
+              ctx.strokeStyle = 'rgba(' + base + ',' + (0.3 * (1 - d / R)).toFixed(3) + ')';
               ctx.beginPath(); ctx.moveTo(X(a), Y(a)); ctx.lineTo(X(b), Y(b)); ctx.stroke();
+              if (adj) { link(a, b); link(b, a); }
             }
           }
         }
       });
+
       for (const q of this.p) {
         const col = this.mono ? (this.dark ? '#C2BDD6' : '#5B5675') : (q.hot ? HOT : q.pop ? ORANGE : VIOLET);
         const pulse = 0.85 + Math.sin(now / 900 + q.ph) * 0.15, r = (q.hot ? 2.6 : 1.7) * pulse;
@@ -452,6 +602,7 @@
         }
         ctx.beginPath(); ctx.arc(X(q), Y(q), r, 0, 6.284); ctx.fillStyle = col; ctx.fill();
       }
+      if (adj) this._drawMeta(ctx, X, Y, adj, metaAmt, now, R);
     }
   }
   if (!window.customElements.get('story-stage')) customElements.define('story-stage', StoryStage);
