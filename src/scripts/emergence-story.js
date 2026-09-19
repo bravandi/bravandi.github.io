@@ -56,6 +56,7 @@
       hot: i => rnd(i, 43) > 0.88 }
   ];
   const TRANS = 1500;
+  const WIDEST = F.reduce((a, b) => (b.label.length > a.length ? b.label : a), '');
 
   class StoryStage extends HTMLElement {
     connectedCallback() {
@@ -79,6 +80,9 @@
       this.mForce = parseFloat(this.getAttribute('mouse-force') || this.getAttribute('mouseforce') || '0.045');
       this.wiggle = parseFloat(this.getAttribute('wiggle') || '1');
       this.total = F.length;
+      this.cfg = this._readCfg();
+      this.timing = this._readTiming();
+      this.ui = this._readOverlay();
 
       this.style.display = 'block'; this.style.position = 'relative';
       this.style.width = '100%'; this.style.height = '100%';
@@ -116,11 +120,12 @@
       this._loop = this._loop.bind(this); this.last = performance.now();
       this.raf = requestAnimationFrame(this._loop);
     }
-    static get observedAttributes() { return ['speed', 'hold', 'mouse-radius', 'mouse-force', 'mouseradius', 'mouseforce', 'wiggle', 'mono']; }
+    static get observedAttributes() { return ['timing', 'speed', 'hold', 'mouse-radius', 'mouse-force', 'mouseradius', 'mouseforce', 'wiggle', 'mono']; }
     attributeChangedCallback(name, _old, v) {
       if (!this._built) return;
-      if (name === 'speed') this.speed = parseFloat(v) || 1;
-      else if (name === 'hold') this.holdMs = parseFloat(v) || 3400;
+      if (name === 'timing') { this.cfg = this._readCfg(); this.timing = this._readTiming(); this.ui = this._readOverlay(); this._applyOverlayStyle(); }
+      else if (name === 'speed') { this.speed = parseFloat(v) || 1; this.timing = this._readTiming(); }
+      else if (name === 'hold') { this.holdMs = parseFloat(v) || 3400; this.timing = this._readTiming(); }
       else if (name === 'mouse-radius' || name === 'mouseradius') this.mRad = parseFloat(v) || 0;
       else if (name === 'mouse-force' || name === 'mouseforce') this.mForce = parseFloat(v) || 0;
       else if (name === 'wiggle') this.wiggle = Number.isFinite(parseFloat(v)) ? parseFloat(v) : 1;
@@ -134,19 +139,19 @@
       const top = document.createElement('div');
       Object.assign(top.style, {
         position: 'absolute', top: '0', left: '0', right: '0', display: 'flex',
-        alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 18px',
-        font: '600 10.5px/1 ' + face, letterSpacing: '.16em', textTransform: 'uppercase',
-        color: mut, pointerEvents: 'none'
+        alignItems: 'center', justifyContent: 'space-between', gap: '14px', padding: '16px 18px',
+        font: '400 15px/1 ' + face, pointerEvents: 'none'
       });
       const live = document.createElement('div');
-      Object.assign(live.style, { display: 'flex', alignItems: 'center', gap: '8px' });
+      Object.assign(live.style, { display: 'flex', alignItems: 'center', gap: '9px', flex: 'none' });
       const dot = document.createElement('span');
-      Object.assign(dot.style, { width: '6px', height: '6px', borderRadius: '50%', background: '#22C55E' });
+      Object.assign(dot.style, {
+        width: '7px', height: '7px', flex: 'none', borderRadius: '50%', background: '#22C55E',
+        boxShadow: '0 0 0 3px rgba(34,197,94,.16)'
+      });
       this.readout = document.createElement('span'); this.readout.textContent = F[0].label;
       live.append(dot, this.readout);
-      const flow = document.createElement('span');
-      flow.textContent = 'Data → insight → decision → value';
-      Object.assign(flow.style, { textTransform: 'none', letterSpacing: '.06em', fontWeight: '500', whiteSpace: 'nowrap' });
+      const flow = this.flowEl = document.createElement('span');
       top.append(live, flow);
 
       const bar = this.capBar = document.createElement('div');
@@ -156,7 +161,7 @@
         font: '400 13px/1.45 ' + face, pointerEvents: 'none'
       });
       this.cap = document.createElement('div');
-      Object.assign(this.cap.style, { color: strong, textWrap: 'pretty' });
+      Object.assign(this.cap.style, { textWrap: 'pretty' });
 
       const row = document.createElement('div');
       Object.assign(row.style, { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '18px' });
@@ -212,6 +217,7 @@
         this.pager.append(t); this.ticks.push(fill);
       }
       this.cur = -1;
+      this._applyOverlayStyle();
     }
     _paint(i, frac) {
       if (!this.ticks) return;
@@ -226,10 +232,83 @@
           if (j !== i) fill.style.width = '0%';
         });
         this.count.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(this.total).padStart(2, '0');
-        this.cap.textContent = F[i].caption;
+        this.cap.textContent = this.timing.captions[i];
         this.readout.textContent = F[i].label;
       }
       this.ticks[i].style.width = (Math.max(0, Math.min(1, frac)) * 100) + '%';
+    }
+    /* Per-step timing comes from src/data/story-stage.json, serialized into the
+       `timing` attribute at build time. Its values are wall-clock milliseconds
+       and are NOT scaled by `speed` — `speed` now only tunes the particle
+       spring in _step(). When the attribute is absent or malformed (the element
+       used standalone), fall back to the old hold/speed attributes so nothing
+       breaks. */
+    _readCfg() {
+      try { return JSON.parse(this.getAttribute('timing') || 'null') || {}; }
+      catch (e) { console.warn('<story-stage>: the timing attribute is not valid JSON — falling back to defaults.'); return {}; }
+    }
+    /* Overlay styling, also from src/data/story-stage.json. Every field is
+       optional: anything absent keeps the built-in value, so the JSON only has
+       to carry what is actually being overridden. */
+    _readOverlay() {
+      const o = this.cfg.overlay || {}, L = o.label || {}, W = o.flow || {}, C = o.caption || {}, d = this.dark;
+      const num = (v, dft) => (Number.isFinite(parseFloat(v)) ? parseFloat(v) : dft);
+      const str = (v, dft) => (v === undefined || v === null || v === '' ? dft : String(v));
+      const bool = (v, dft) => (v === undefined || v === null ? dft : v !== false);
+      return {
+        narrowBelowPx: num(o.narrowBelowPx, 470),
+        label: {
+          fontSize: num(L.fontSize, 15),
+          fontSizeNarrow: num(L.fontSizeNarrow, 12.5),
+          fontWeight: str(L.fontWeight, '800'),
+          letterSpacing: str(L.letterSpacing, '0.1em'),
+          letterSpacingNarrow: str(L.letterSpacingNarrow, '0.08em'),
+          color: str(d ? L.colorDark : L.color, d ? '#F4F2FB' : '#2D2A45'),
+          uppercase: bool(L.uppercase, true),
+        },
+        caption: {
+          fontSize: num(C.fontSize, 15),
+          fontSizeNarrow: num(C.fontSizeNarrow, 13),
+          fontWeight: str(C.fontWeight, '400'),
+          lineHeight: str(C.lineHeight, '1.45'),
+          letterSpacing: str(C.letterSpacing, 'normal'),
+          color: str(d ? C.colorDark : C.color, d ? '#F4F2FB' : '#2D2A45'),
+        },
+        flow: {
+          text: str(W.text, 'Data → insight → decision → value'),
+          fontSize: num(W.fontSize, 12.5),
+          fontSizeNarrow: num(W.fontSizeNarrow, 11),
+          fontWeight: str(W.fontWeight, '600'),
+          letterSpacing: str(W.letterSpacing, '0.02em'),
+          color: str(d ? W.colorDark : W.color, d ? '#B7B2CE' : '#5B5675'),
+          hideWhenTight: bool(W.hideWhenTight, true),
+        },
+      };
+    }
+    _readTiming() {
+      const sp = parseFloat(this.getAttribute('speed') || '1') || 1;
+      const t = {
+        transitionMs: TRANS / sp,
+        holds: new Array(this.total).fill(parseFloat(this.getAttribute('hold') || '3400') / sp),
+        captions: F.map((f) => f.caption),
+      };
+      const cfg = this.cfg;
+      if (!cfg) return t;
+      const tr = parseFloat(cfg.transitionMs);
+      if (Number.isFinite(tr) && tr > 0) t.transitionMs = tr;
+      const steps = Array.isArray(cfg.steps) ? cfg.steps : [];
+      if (steps.length && steps.length !== this.total) {
+        console.warn('<story-stage>: timing has ' + steps.length + ' steps, expected ' + this.total + ' — extras ignored, gaps keep the default hold.');
+      }
+      for (let i = 0; i < this.total; i++) {
+        const h = steps[i] && parseFloat(steps[i].holdMs);
+        if (Number.isFinite(h) && h > 0) t.holds[i] = h;
+        if (steps[i] && typeof steps[i].caption === 'string') t.captions[i] = steps[i].caption;
+        if (steps[i] && steps[i].label && steps[i].label !== F[i].label) {
+          console.warn('<story-stage>: timing step ' + i + ' is labelled "' + steps[i].label + '" but formation ' + i + ' is "' + F[i].label + '" — the JSON is out of order.');
+        }
+      }
+      return t;
     }
     _go(i) {
       this.stage = ((i % this.total) + this.total) % this.total;
@@ -252,6 +331,47 @@
       this.w = Math.max(1, r.width); this.h = Math.max(1, r.height);
       this.canvas.width = this.w * d; this.canvas.height = this.h * d;
       this.ctx.setTransform(d, 0, 0, d, 0, 0);
+      this._fitOverlay();
+    }
+    /* Keep the top bar legible without letting it overrun a narrow stage: the
+       label shrinks first, and the flow line drops out before either can wrap. */
+    /* Everything from the settings file that is not width-dependent. Split out
+       so editing the `timing` attribute in devtools re-skins the bar. */
+    _applyOverlayStyle() {
+      if (!this.readout || !this.cap) return;
+      const ui = this.ui;
+      Object.assign(this.readout.style, {
+        whiteSpace: 'nowrap', fontWeight: ui.label.fontWeight, color: ui.label.color,
+        textTransform: ui.label.uppercase ? 'uppercase' : 'none',
+      });
+      Object.assign(this.cap.style, {
+        fontWeight: ui.caption.fontWeight, lineHeight: ui.caption.lineHeight,
+        letterSpacing: ui.caption.letterSpacing, color: ui.caption.color,
+      });
+      this.flowEl.textContent = ui.flow.text;
+      Object.assign(this.flowEl.style, {
+        whiteSpace: 'nowrap', textTransform: 'none', flex: 'none',
+        fontWeight: ui.flow.fontWeight, letterSpacing: ui.flow.letterSpacing, color: ui.flow.color,
+      });
+      this._fitOverlay();
+    }
+    _fitOverlay() {
+      if (!this.readout || !this.cap) return;
+      const ui = this.ui, narrow = this.w < ui.narrowBelowPx;
+      this.readout.style.fontSize = (narrow ? ui.label.fontSizeNarrow : ui.label.fontSize) + 'px';
+      this.readout.style.letterSpacing = narrow ? ui.label.letterSpacingNarrow : ui.label.letterSpacing;
+      this.flowEl.style.fontSize = (narrow ? ui.flow.fontSizeNarrow : ui.flow.fontSize) + 'px';
+      this.cap.style.fontSize = (narrow ? ui.caption.fontSizeNarrow : ui.caption.fontSize) + 'px';
+      // Measure rather than guess a breakpoint: the label is the widest part
+      // and its text changes every step, so the flow line is only shown when
+      // it genuinely fits beside the longest current label.
+      const bar = this.flowEl.parentNode, shown = this.readout.textContent;
+      this.flowEl.style.display = '';
+      if (!ui.flow.hideWhenTight) return;
+      this.readout.textContent = WIDEST;
+      const fits = bar.scrollWidth <= bar.clientWidth + 1;
+      this.readout.textContent = shown;
+      if (!fits) this.flowEl.style.display = 'none';
     }
     _loop(now) {
       this.raf = requestAnimationFrame(this._loop);
@@ -261,13 +381,14 @@
       if (box.width < 2 || box.height < 2) return;
       if (document.hidden || this.visible === false) return;
       const el = now - this.t0;
+      const moveD = this.timing.transitionMs;
       if (this.phase === 'move') {
-        this.blend = Math.min(1, el / (TRANS / this.speed));
+        this.blend = Math.min(1, el / moveD);
         if (this.blend >= 1) { this.stage = this.next; this.next = (this.stage + 1) % this.total; this.blend = 0; this.phase = 'hold'; this.t0 = now; this._retarget(); }
-      } else if (!this.locked && el > this.holdMs / this.speed) {
+      } else if (!this.locked && el > this.timing.holds[this.stage]) {
         this.phase = 'move'; this.t0 = now; this.blend = 0;
       }
-      const holdD = this.holdMs / this.speed, moveD = TRANS / this.speed, span = holdD + moveD;
+      const holdD = this.timing.holds[this.stage], span = holdD + moveD;
       const frac = this.phase === 'move'
         ? (holdD + Math.min(moveD, el)) / span
         : Math.min(holdD, el) / span;

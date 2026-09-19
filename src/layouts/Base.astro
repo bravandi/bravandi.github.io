@@ -25,15 +25,17 @@ const ogImage = new URL(image, Astro.site).href;
     <meta name="generator" content={Astro.generator} />
 
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GV8PLT9305"></script>
-    <script>
+    <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-GV8PLT9305"></script>
+    <script is:inline>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
+      function gtag() {
+        dataLayer.push(arguments);
+      }
       gtag('js', new Date());
 
       gtag('config', 'G-GV8PLT9305');
     </script>
-    <!-- Google tag (gtag.js) -->
+    <!-- End Google tag (gtag.js) -->
 
     <!-- Google Tag Manager. `is:inline` keeps Astro from bundling this into a
       deferred module — GTM has to run inline, as high in <head> as it can,
@@ -91,7 +93,6 @@ const ogImage = new URL(image, Astro.site).href;
         style="display:none;visibility:hidden"></iframe></noscript
     >
     <!-- End Google Tag Manager (noscript) -->
-
 
     <slot />
   </body>

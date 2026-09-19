@@ -30,6 +30,8 @@ public/
   CNAME            Pins the custom domain on every deploy
   robots.txt       Points at the sitemap
 src/
+  data/
+    story-stage.json  Step pacing for the right-column animation — see Settings
   layouts/
     Base.astro     The page's <head>: title, description, canonical, OG,
                     Twitter card, font preload
@@ -43,6 +45,75 @@ src/
                     typography, the Button component) ported verbatim from
                     the design canvas
 ```
+
+## Settings
+
+`src/data/story-stage.json` controls the pacing and the overlay text of the
+`<story-stage>` animation. It is imported at build time and serialized into the
+element's `timing` attribute, so there is no runtime fetch — edit the JSON and
+rebuild. Every field is optional; anything absent keeps the built-in value.
+
+### Pacing
+
+```json
+{
+  "transitionMs": 2143,
+  "steps": [
+    {
+      "label": "RAW SIGNAL",
+      "holdMs": 2000,
+      "caption": "Evidence arrives scattered — genomics, clinic, real world."
+    }
+  ]
+}
+```
+
+- `holdMs` — how long that formation sits still. Per step, so any one stage can
+  linger longer than the rest.
+- `caption` — the line shown at the bottom left while that step is on screen.
+  Omit it and the built-in text for that formation is used.
+- `transitionMs` — how long the morph between formations takes. Global.
+- `label` — documentation only, but the component warns in the console if it
+  stops matching the formation at that index (i.e. the JSON drifted out of
+  order). The ten entries must stay in the same order as `F` in
+  `src/scripts/emergence-story.js`.
+
+A step costs `holdMs + transitionMs`; the full loop is the sum of all ten.
+Both values are wall-clock milliseconds and are **not** scaled by the element's
+`speed` attribute — `speed` only tunes the particle spring.
+
+### Overlay
+
+Text drawn over the stage, in three groups: `label` is the step name at the top
+left (`RAW SIGNAL`, `INGESTION`, …), `flow` is the line at the top right, and
+`caption` is the sentence at the bottom left.
+
+```json
+{
+  "overlay": {
+    "narrowBelowPx": 470,
+    "label": { "fontSize": 15, "fontWeight": 800, "color": "#2D2A45" },
+    "flow": { "text": "Data → insight → decision → value", "fontSize": 12.5 },
+    "caption": { "fontSize": 15, "fontSizeNarrow": 13, "lineHeight": "1.45" }
+  }
+}
+```
+
+| Field | Applies to | Notes |
+| --- | --- | --- |
+| `fontSize` / `fontSizeNarrow` | all three | Numbers, in px. The narrow value is used below `narrowBelowPx` |
+| `fontWeight` | all three | 400–900 |
+| `color` / `colorDark` | all three | `colorDark` is used when the element has `theme="dark"` |
+| `letterSpacing` | all three | CSS length, e.g. `"0.1em"`. `label` also takes `letterSpacingNarrow` |
+| `text` | flow | The other two get their text per step: `label` from the formations, `caption` from `steps[].caption` |
+| `lineHeight` | caption | The only one that wraps, so the only one that needs it |
+| `uppercase` | label | `false` prints the formation names as written |
+| `hideWhenTight` | flow | `true` drops the flow line when it would collide with the widest label; `false` always shows it, which can overlap on a phone |
+| `narrowBelowPx` | — | Measured against the **stage** width, not the viewport: the stage is 46% of the window above 900px and full width below |
+
+If the attribute is missing or malformed the component falls back to the old
+`hold`/`speed` attributes and the built-in styling, so the element still works
+standalone.
 
 ## Editing
 

@@ -1,0 +1,87 @@
+{
+  "transitionMs": 2143,
+  "overlay": {
+    "narrowBelowPx": 470,
+    "label": {
+      "fontSize": 20,
+      "fontSizeNarrow": 15,
+      "fontWeight": 800,
+      "letterSpacing": "0.1em",
+      "letterSpacingNarrow": "0.08em",
+      "color": "#2D2A45",
+      "colorDark": "#F4F2FB",
+      "uppercase": true
+    },
+    "flow": {
+      "text": "Data → insight → decision → value",
+      "fontSize": 20,
+      "fontSizeNarrow": 15,
+      "fontWeight": 600,
+      "letterSpacing": "0.02em",
+      "color": "#5B5675",
+      "colorDark": "#B7B2CE",
+      "hideWhenTight": true
+    },
+    "caption": {
+      "fontSize": 20,
+      "fontSizeNarrow": 15,
+      "fontWeight": 400,
+      "lineHeight": "1.45",
+      "letterSpacing": "normal",
+      "color": "#2D2A45",
+      "colorDark": "#F4F2FB"
+    }
+  },
+  "steps": [
+    {
+      "label": "RAW SIGNAL",
+      "holdMs": 1500,
+      "caption": "Evidence arrives scattered — genomics, clinic, real world."
+    },
+    {
+      "label": "INGESTION",
+      "holdMs": 1500,
+      "caption": "Made tabular before it is made useful."
+    },
+    {
+      "label": "HARMONIZATION",
+      "holdMs": 1500,
+      "caption": "Two vocabularies — biology and machine — learn to align."
+    },
+    {
+      "label": "KNOWLEDGE GRAPH",
+      "holdMs": 1500,
+      "caption": "Relationships become the asset, not the rows."
+    },
+    {
+      "label": "REPRESENTATION",
+      "holdMs": 1500,
+      "caption": "Diseases cluster by mechanism — rare beside common."
+    },
+    {
+      "label": "MODEL",
+      "holdMs": 1500,
+      "caption": "Capability, layered on foundations you can reuse."
+    },
+    {
+      "label": "BENCHMARK",
+      "holdMs": 1500,
+      "caption": "Nothing ships on a demo. It ships on a benchmark."
+    },
+    {
+      "label": "INSIGHT",
+      "holdMs": 1500,
+      "caption": "Noise narrows into something a scientist can act on."
+    },
+    {
+      "label": "DECISION",
+      "holdMs": 1500,
+      "caption": "Which asset, which indication, which evidence — and why."
+    },
+    {
+      "label": "VALUE",
+      "holdMs": 1500,
+      "caption": "Measured where it counts: better decisions, sooner."
+    }
+  ]
+}
