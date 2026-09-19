@@ -60,17 +60,17 @@
   "steps": [
     {
       "label": "RAW SIGNAL",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Evidence arrives scattered — genomics, clinic, real world."
     },
     {
       "label": "INGESTION",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Made tabular before it is made useful."
     },
     {
       "label": "HARMONIZATION",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Two vocabularies — biology and machine — learn to align."
     },
     {
@@ -80,32 +80,32 @@
     },
     {
       "label": "REPRESENTATION",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Diseases cluster by mechanism — rare beside common."
     },
     {
       "label": "MODEL",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Capability, layered on foundations you can reuse."
     },
     {
       "label": "BENCHMARK",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Nothing ships on a demo. It ships on a benchmark."
     },
     {
       "label": "INSIGHT",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Noise narrows into something a scientist can act on."
     },
     {
       "label": "DECISION",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Which asset, which indication, which evidence — and why."
     },
     {
       "label": "VALUE",
-      "holdMs": 1500,
+      "holdMs": 1750,
       "caption": "Measured where it counts: better decisions, sooner."
     }
   ]
